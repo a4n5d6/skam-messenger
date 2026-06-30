@@ -1,0 +1,60 @@
+<div class="main">
+
+  <div class="modal-window-user-info hidden">
+    <button class="close-modal-window"></button>
+    <div class="recipient-info">
+      <div class="modal-window-avatar"></div>
+      <div class="name"></div>
+      <div class="modal-window-userID"></div>
+    </div>
+  </div>
+
+  <div class="modal-window-myuser-info hidden">
+    <button class="close-mymodal-window"></button>
+    <div class="my-info">
+      <div class="modal-window-avatar"></div>
+      <div class="modal-window-name"></div>
+      <div class="modal-window-userID"></div>
+    </div>
+  </div>
+
+  <div class="left-column">
+    <input id="search-recipient" class="search-recipient" type="text" placeholder="Введите nickname собеседника">
+    <div class="finded-user hidden">
+      <div class="finded-user-info"></div>
+      <div class="finded-user-buttons">
+        <button type="button" class="button-add">Добавить</button>
+        <button type="button" class="button-del">Удалить</button>
+      </div>
+    </div>
+    <div class="user-chats">
+      {{#each userСhats}}
+        {{{renderChatContainerHelper this @root.userID}}}
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="middle-column">
+    <div class="pub-user-info hidden">
+    <span class="typing hidden">Печатает . . . </span>
+      <div class="avatar"></div>
+      <div class="user-name"></div>
+      <div class="id-user-name"></div>
+    </div>
+
+    <div class="messages"></div>
+
+    <div class="message-text-container hidden">
+      <input type="text" class="text-info">
+      <button class="enter-message">
+        <img class="enter-icon" src="img/img.png" alt="">
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<button class="myInfoBtn">Мой аккаунт</button>
+<a href="/logout" class="butLogout">Выйти</a>
+<audio id="audioSendMess"><source src="music/iphone-send-w.mp3" type="audio/mpeg"></audio>
+{{!-- <audio autoplay loop><source src="music/Звук - Птички Бурмалдички.mp3" type="audio/mpeg"></audio> --}}
