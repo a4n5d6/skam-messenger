@@ -159,22 +159,23 @@ chatContainers.forEach(chatContainer => {
 
 
 if (textInfo) {
-    textInfo.addEventListener("keydown", async e => { 
-        if (e.key === "Enter") { 
-        const response = await fetch("api/send-message", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                message_text: textInfo.value, 
-                chat_ID: localStorage.getItem("chatID"), 
-                user_ID: userID}) //Отправляем на сервер текст сообщения
-        });
+  textInfo.addEventListener("keydown", async e => { 
+    if (e.key === "Enter") { 
+      const response = await fetch("api/send-message", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          message_text: textInfo.value, 
+          chat_ID: localStorage.getItem("chatID"),
+          user_ID: userID
+        }) //Отправляем на сервер текст сообщения
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (response.ok) {
-            textInfo.value = "";
-            console.log(result);
+      if (response.ok) {
+        textInfo.value = "";
+        console.log(result);
             // const div = document.createElement("div");
             // div.classList.add("message-container");
             // if (userID == result.sender_id) {
@@ -189,10 +190,11 @@ if (textInfo) {
             // const chatContainer = document.getElementById(chatID);
             // chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
             // chatContainer.querySelector(".last-message-text").textContent = result.message_text;
-        }
-        console.log(textInfo.value, localStorage.getItem("chatID"));
-        audioSendMessage.play();
-    }});
+      }
+      console.log(textInfo.value, localStorage.getItem("chatID"));
+      audioSendMessage.play();
+    }
+  });
 }
 
 
