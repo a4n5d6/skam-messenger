@@ -25,24 +25,24 @@ router.post("/get-chat-messages", async (req, res) => {
 
 
 router.post("/send-message", async (req, res) => {
+  const messageText = req.body.message_text;
     const chat_ID = req.body.chat_ID;
-    const currentUser_ID = req.body.user_ID;
-    const messageText = message_text
+    const currentUser_ID = req.body.user_ID;  // это отправитель
+    const userID = req.session.userID;        // это Андрей
     try {
-        await db.exec('BEGIN TRANSACTION');
-
-        const result = await db.run('INSERT INTO messages ("chat_id", "sender_id", "text", "time", "status") VALUES (?, ?, ?, ?, "send")', [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]);
-        const newID = result.lastID;
-
-        await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?");
-        
-        await Promise.all([
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]), // добавить себя в таблицу chat_members
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])  // добавить собеседника в таблицу chat_members
-        ]);
-
+      await db.exec('BEGIN TRANSACTION');
+      const result = await db.run('INSERT INTO messages ("chat_id", "sender_id", "text", "time", "status") VALUES (?, ?, ?, ?, "send")', [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]);
+      const newID = result.lastID;
+      await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?");
+      await Promise.all([
+        db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, userID]), // добавить себя в таблицу chat_members
+        db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, currentUser_ID])  // добавить собеседника в таблицу chat_members
+      ]);
+      await db.exec('COMMIT');
+      res.json(result);
+      console.log('Сообщение отправлено')
     } catch {
-
+      res.json({ success: false, message: 'Сообщение не отправлено' });
     }
 
     // const now = admin.firestore.Timestamp.now();
