@@ -78,13 +78,13 @@ function selectChat(chatContainer) {
 }
 
 
-function formatTime(timestamp) {
-    const milliseconds = timestamp._seconds * 1000 + timestamp._nanoseconds / 1e6;
-    const date = new Date(milliseconds);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-}
+// function formatTime(timestamp) {
+//     const milliseconds = timestamp._seconds * 1000 + timestamp._nanoseconds / 1e6;
+//     const date = new Date(milliseconds);
+//     const hours = date.getHours().toString().padStart(2, "0");
+//     const minutes = date.getMinutes().toString().padStart(2, "0");
+//     return `${hours}:${minutes}`;
+// }
 
 
 if (butLogout) {
@@ -159,7 +159,7 @@ chatContainers.forEach(chatContainer => {
 
 
 if (textInfo) {
-  textInfo.addEventListener("keydown", async e => { 
+  textInfo.addEventListener("keydown", async (e) => { 
     if (e.key === "Enter") { 
       const response = await fetch("api/send-message", {
         method: "POST",
@@ -176,22 +176,21 @@ if (textInfo) {
       if (response.ok) {
         textInfo.value = "";
         console.log(result);
-            // const div = document.createElement("div");
-            // div.classList.add("message-container");
-            // if (userID == result.sender_id) {
-            //     div.classList.add("recipient");
-            // };
-            // div.innerHTML = `
-            //     <p>${result.message_text}</p>
-            //     <span>${formatTime(result.message_time)}</span>
-            // `;//Формируем структуру  сообщения
-            // messageContainer.appendChild(div);
-            // const chatID =  localStorage.getItem("chatID");    
-            // const chatContainer = document.getElementById(chatID);
+            const div = document.createElement("div");
+            div.classList.add("message-container");
+            if (userID == result.sender_id) {
+                div.classList.add("recipient");
+            };
+            div.innerHTML = `
+                <p>${result.message_text}</p>
+                <span>${result.message_time}</span>
+            `;//Формируем структуру  сообщения
+            messageContainer.appendChild(div);
+            const chatID =  localStorage.getItem("chatID");    
+            const chatContainer = document.getElementById(chatID);
             // chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
-            // chatContainer.querySelector(".last-message-text").textContent = result.message_text;
+            chatContainer.querySelector(".last-message-text").textContent = result.message_text;
       }
-      console.log(textInfo.value, localStorage.getItem("chatID"));
       audioSendMessage.play();
     }
   });
@@ -214,20 +213,20 @@ if (enterMessage) {
             if (response.ok) {
                 textInfo.value = "";
                 console.log(result);
-                // const div = document.createElement("div");
-                // div.classList.add("message-container");
-                // if (userID == result.sender_id) {
-                    //     div.classList.add("recipient");
-                    // };
-                    // div.innerHTML = `
-                    //     <p>${result.message_text}</p>
-                    //     <span>${formatTime(result.message_time)}</span>
-                    // `;//Формируем структуру  сообщения
-                    // messageContainer.appendChild(div);
-                    // const chatID =  localStorage.getItem("chatID");    
-                    // const chatContainer = document.getElementById(chatID);
-                    // chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
-                    // chatContainer.querySelector(".last-message-text").textContent = result.message_text;
+                const div = document.createElement("div");
+                div.classList.add("message-container");
+                if (userID == result.sender_id) {
+                        div.classList.add("recipient");
+                    };
+                    div.innerHTML = `
+                        <p>${result.message_text}</p>
+                        <span>${formatTime(result.message_time)}</span>
+                    `;//Формируем структуру  сообщения
+                    messageContainer.appendChild(div);
+                    const chatID =  localStorage.getItem("chatID");    
+                    const chatContainer = document.getElementById(chatID);
+                    chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
+                    chatContainer.querySelector(".last-message-text").textContent = result.message_text;
                 }
                 console.log(textInfo.value, localStorage.getItem("chatID"));
                 audioSendMessage.play();

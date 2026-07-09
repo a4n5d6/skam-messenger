@@ -25,23 +25,24 @@ router.post("/get-chat-messages", async (req, res) => {
 
 
 router.post("/send-message", async (req, res) => {
-  const messageText = req.body.message_text;
+    const messageText = req.body.message_text;
     const chat_ID = req.body.chat_ID;
     const currentUser_ID = req.body.user_ID;  // это отправитель
-    const userID = req.session.userID;        // это Андрей
+    const db = await getDatabase();
     try {
       await db.exec('BEGIN TRANSACTION');
-      const result = await db.run('INSERT INTO messages ("chat_id", "sender_id", "text", "time", "status") VALUES (?, ?, ?, ?, "send")', [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]);
+      const result = await db.run(
+        'INSERT INTO messages ("id", "chat_id", "sender_id", "text", "time", "status") VALUES (NULL, ?, ?, ?, ?, "send")',
+        [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]
+      );
       const newID = result.lastID;
-      await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?");
-      await Promise.all([
-        db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, userID]), // добавить себя в таблицу chat_members
-        db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, currentUser_ID])  // добавить собеседника в таблицу chat_members
-      ]);
+      const messageData = await db.get("SELECT * FROM messages WHERE id = ?", [newID]);
+      await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?", [newID, chat_ID]);
       await db.exec('COMMIT');
-      res.json(result);
       console.log('Сообщение отправлено')
+      res.json({ success: true, message: 'Сообщение отправлено', message_data: messageData });
     } catch {
+      await db.exec('ROLLBACK');
       res.json({ success: false, message: 'Сообщение не отправлено' });
     }
 
