@@ -168,30 +168,36 @@ if (textInfo) {
           message_text: textInfo.value, 
           chat_ID: localStorage.getItem("chatID"),
           user_ID: userID
-        }) //Отправляем на сервер текст сообщения
+        })
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        textInfo.value = "";
-        console.log(result);
-            const div = document.createElement("div");
-            div.classList.add("message-container");
-            if (userID == result.sender_id) {
-                div.classList.add("recipient");
-            };
-            div.innerHTML = `
-                <p>${result.message_text}</p>
-                <span>${result.message_time}</span>
-            `;//Формируем структуру  сообщения
-            messageContainer.appendChild(div);
-            const chatID =  localStorage.getItem("chatID");    
-            const chatContainer = document.getElementById(chatID);
-            // chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
-            chatContainer.querySelector(".last-message-text").textContent = result.message_text;
+        if (result.success) {
+          const messageData = result['message_data'];
+          // messageData = { id, chat_id, sender_id, text, time }
+          
+          const div = document.createElement("div");  // контейнер для отображения сообщения
+          div.id = messageData['id'];
+          div.classList.add("message-container");
+          if (userID === messageData['sender_id']) {
+            div.classList.add("recipient");
+            // если id текущего пользователя совпадает с id отправителя
+          }
+          div.innerHTML = `
+            <p>${messageData['text']}</p>
+            <p>${messageData['time']}</p>
+          `;
+          messageContainer.appendChild(div);
+          const chatID =  localStorage.getItem("chatID");
+          const chatContainer = document.getElementById(chatID);
+          chatContainer.querySelector(".last-message-text").textContent = messageData['text'];
+          // изменить время последнего сообщения в чате
+          textInfo.value = "";
+          audioSendMessage.play();
+        }
       }
-      audioSendMessage.play();
     }
   });
 }
