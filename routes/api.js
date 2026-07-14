@@ -30,20 +30,25 @@ router.post("/send-message", async (req, res) => {
     const currentUser_ID = req.body.user_ID;  // это отправитель
     const db = await getDatabase();
     try {
-      await db.exec('BEGIN TRANSACTION');
-      const result = await db.run(
-        'INSERT INTO messages ("id", "chat_id", "sender_id", "text", "time", "status") VALUES (NULL, ?, ?, ?, ?, "send")',
-        [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]
-      );
-      const newID = result.lastID;
-      const messageData = await db.get("SELECT * FROM messages WHERE id = ?", [newID]);
-      await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?", [newID, chat_ID]);
-      await db.exec('COMMIT');
-      console.log('Сообщение отправлено')
-      res.json({ success: true, message: 'Сообщение отправлено', message_data: messageData });
+        await db.exec('BEGIN TRANSACTION');
+        const result = await db.run(
+            'INSERT INTO messages ("id", "chat_id", "sender_id", "text", "time", "status") VALUES (NULL, ?, ?, ?, ?, "send")',
+            [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]
+        );
+        const newID = result.lastID;
+        const messageData = await db.get("SELECT * FROM messages WHERE id = ?", [newID]);
+        await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?", [newID, chat_ID]);
+        await db.exec('COMMIT');
+        const io = req.app.get("io");
+        const members = await db.all("SELECT user_id FROM chat_members WHERE chat_id = ?", [chat_ID]);
+        members.forEach(member => {
+            io.to(`user_${member["user_id"]}`).emit("new-message", messageData);
+        });
+        console.log('Сообщение отправлено', members)
+        res.json({ success: true, message: 'Сообщение отправлено', message_data: messageData });
     } catch {
-      await db.exec('ROLLBACK');
-      res.json({ success: false, message: 'Сообщение не отправлено' });
+        await db.exec('ROLLBACK');
+        res.json({ success: false, message: 'Сообщение не отправлено' });
     }
 
     // const now = admin.firestore.Timestamp.now();
@@ -66,11 +71,8 @@ router.post("/send-message", async (req, res) => {
 
     // data["chat_id"] = req.body["chat_ID"];
 
-    // const io = req.app.get("io");
 
-    // members.forEach(memberID => {
-    //     io.to(`user_${memberID}`).emit("new-message", data);
-    // });
+   
 
     // res.json(data);
 });

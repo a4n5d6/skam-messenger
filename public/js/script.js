@@ -226,12 +226,12 @@ if (enterMessage) {
                     };
                     div.innerHTML = `
                         <p>${result.message_text}</p>
-                        <span>${formatTime(result.message_time)}</span>
+                        <span>${result.message_time}</span>
                     `;//Формируем структуру  сообщения
                     messageContainer.appendChild(div);
                     const chatID =  localStorage.getItem("chatID");    
                     const chatContainer = document.getElementById(chatID);
-                    chatContainer.querySelector(".last-message-time").textContent = formatTime(result.message_time);
+                    chatContainer.querySelector(".last-message-time").textContent = result.message_time;
                     chatContainer.querySelector(".last-message-text").textContent = result.message_text;
                 }
                 console.log(textInfo.value, localStorage.getItem("chatID"));
@@ -243,19 +243,18 @@ if (enterMessage) {
 socket.on("new-message", (message) => {
     // message - объект сообщения
     const chatID = localStorage.getItem("chatID");
-    
+    console.log(message);
     if (message["chat_id"] === chatID) {
         const chatContainer = document.getElementById(chatID);
-        chatContainer.querySelector(".last-message-time").textContent = formatTime(message["message_time"]);
-        chatContainer.querySelector(".last-message-text").textContent = message["message_text"];
+        chatContainer.querySelector(".last-message-time").textContent = message["time"];
+        chatContainer.querySelector(".last-message-text").textContent = message["text"];
         // message["chat_id"] - id чата, куда пришло новое сообщение
         // chatID - id выбранного чата
         appendMessage(message);
     } else {
         const chatContainer = document.getElementById(message["chat_id"]);
-        console.log("new", chatContainer);
-        chatContainer.querySelector(".last-message-time").textContent = formatTime(message["message_time"]);
-        chatContainer.querySelector(".last-message-text").textContent = message["message_text"];
+        chatContainer.querySelector(".last-message-time").textContent = message["time"];
+        chatContainer.querySelector(".last-message-text").textContent = message["text"];
         // Программа  получает новое сообщения, но сообщение приходит в другой чат
     }
 });

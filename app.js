@@ -78,7 +78,7 @@ io.on('connection', (socket) => {
   if (session && session.userID) {
     const userID = session.userID;
     socket.join(`user_${userID}`);
-    // console.log(`Пользователь ${userID} (socket: ${socket.id}) подключил личный канал`);
+    console.log(`Пользователь ${userID} (socket: ${socket.id}) подключил личный канал`);
   } else {
     socket.disconnect();
   }
