@@ -28,12 +28,13 @@ router.post("/send-message", async (req, res) => {
     const messageText = req.body.message_text;
     const chat_ID = req.body.chat_ID;
     const currentUser_ID = req.body.user_ID;  // это отправитель
+    const time = req.body.time;
     const db = await getDatabase();
     try {
         await db.exec('BEGIN TRANSACTION');
         const result = await db.run(
             'INSERT INTO messages ("id", "chat_id", "sender_id", "text", "time", "status") VALUES (NULL, ?, ?, ?, ?, "send")',
-            [chat_ID, currentUser_ID, messageText, "2026-06-26 18:52:35"]
+            [chat_ID, currentUser_ID, messageText, time]
         );
         const newID = result.lastID;
         const messageData = await db.get("SELECT * FROM messages WHERE id = ?", [newID]);
@@ -50,47 +51,24 @@ router.post("/send-message", async (req, res) => {
         await db.exec('ROLLBACK');
         res.json({ success: false, message: 'Сообщение не отправлено' });
     }
-
-    // const now = admin.firestore.Timestamp.now();
-    // const data = {
-    //     "sender_id": req.body["user_ID"],
-    //     "message_time": now,
-    //     "message_status":"sent" ,
-    //     "message_text": req.body["message_text"]
-    // }
-
-    // await db.collection("chats").doc(req.body["chat_ID"]).collection("messages").add(data);
-    // await db.collection("chats").doc(req.body["chat_ID"]).update({
-    //     "last_message": {
-    //     "sender_id": req.body["user_ID"],
-    //     "last_message_text": req.body["message_text"],
-    //     "last_message_time": now
-    // }});
-    // const chat = await db.collection("chats").doc(req.body["chat_ID"]).get();
-    // const members = chat.data()["members"];
-
-    // data["chat_id"] = req.body["chat_ID"];
-
-
-   
-
-    // res.json(data);
 });
 
 
 router.post("/get-user-info", async (req, res) => {
-    const userID = req.session.userID;
-    const chatID = req.body.chatID;
-    const documentSnapshot = await db.collection("chats").doc(chatID).get();
-    const members = documentSnapshot.get("members");
-    const recipientID = members.find(memberId => memberId !== userID);
-    const recipientData = (await db.collection("users").doc(recipientID).get()).data();
-    const data = {
-        "name": recipientData.name,
-        "username": recipientData.username,
-        "last_seen": recipientData.last_seen,
-        "status": recipientData.status
-    };
+
+
+    // const userID = req.session.userID;
+    // const chatID = req.body.chatID;
+    // const documentSnapshot = await db.collection("chats").doc(chatID).get();
+    // const members = documentSnapshot.get("members");
+    // const recipientID = members.find(memberId => memberId !== userID);
+    // const recipientData = (await db.collection("users").doc(recipientID).get()).data();
+    // const data = {
+    //     "name": recipientData.name,
+    //     "username": recipientData.username,
+    //     "last_seen": recipientData.last_seen,
+    //     "status": recipientData.status
+    // };
     res.json(data);
 });
 
@@ -192,33 +170,6 @@ router.post("/find-recipient", async (req, res) => {
         console.log("Ошибка поиска собеседника", error)
         res.json({success: false, message: "Вся ясно, с тобой никто не хочет общаться..."})
     }
-
-
-
-
-
-    // const querySnapshot = await db.collection("users").where("username", "==", recipientUsername).get();
-    // if (querySnapshot.empty) {
-    //     res.json({ success: false, message: "Пользователя не существует" }); 
-    // } else {
-    //     if (querySnapshot.docs[0].id == req.session.userID) {
-    //         res.json({ success: false, message: "Нельзя создавать чат с самим собой" }); 
-    //     } else {
-    //         const snapshot = await db.collection("chats").where("members", "array-contains", req.session.userID).get();
-    //         const result = snapshot.docs.find(doc => 
-    //             doc.data().members.includes(querySnapshot.docs[0].id)
-    //         );
-    //         if (result) {
-    //             res.json({ success: false, message: "Чат уже существует" }); 
-    //         } else {
-    //             res.json({
-    //                 success: true,
-    //                 message: "Пользователь найден",
-    //                 recipientUser: {id: querySnapshot.docs[0].id, username: querySnapshot.docs[0].get("username") }
-    //             });
-    //         }
-    //     }
-    // }
 });
 
 
@@ -263,61 +214,6 @@ router.post("/add-recipient", async (req, res) => {
         await db.exec('ROLLBACK');
         return res.json({ success: true, error: error.message });
     }
-
-    // try {
-    //     const sqlString = 'INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)'
-    //     const params = ["2026-06-19 18:40:00"];
-    //     const createdChat = await db.run(sqlString, params); 
-    //     const sqlSrt = "INSERT INTO chat_members ('chat_id', 'user_id') VALUES (?, ?);"
-    //     const params2 = [createdChat.id, user_ID];
-        
-    //     res.json({success: true, chatID: ctreatedChat.id})
-    // } catch (error) {
-    //     console.log("Не получилось добавить шута твоего в чаты твои.", error);
-    //     res.json({success: false, message: "Всё плохо, не получается добавить чат"})
-    // }
-
-
-
-    // console.log(req.body);
-    // const recipientID = req.body["recipientID"];
-    // const snapshot = await db.collection("users").doc(recipientID).get();
-    // const recipientData = snapshot.data();
-    // const recipientColor = recipientData["color"];
-    // const recipientName = recipientData["name"];
-    // const now = admin.firestore.Timestamp.now();
-    // const data = {
-    //     'chat_type': 'private',
-    //     'created_at': now,
-    //     'last_message': {
-    //         'sender_id': '',
-    //         'last_message_text': '',
-    //         'last_message_time': now
-    //     },
-    //     'members': [req.session.userID, recipientID],
-    //     'members_details': {
-    //         'member_names': {
-    //            [req.session.userID]: req.session.userName,
-    //            [recipientID]: recipientName,
-    //         },
-    //         'member_colors': {
-    //             [req.session.userID]: req.session.userColor,
-    //             [recipientID]: recipientColor,
-    //         }
-    //     }
-    // }
-
-
-    // const newChat = await db.collection("chats").add(data);
-
-    // data["chat_id"] = newChat.id;
-
-    // 
-
-    // const members = data["members"];
-    // 
-
-    // res.json({ success: true, message:"Chat created" });
 });
 
 

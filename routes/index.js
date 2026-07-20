@@ -23,23 +23,35 @@ async function getUserChats(user_id) { // функция получает чат
   try {
     const db = await getDatabase();
     const chats = await db.all(
-      'SELECT * FROM chats JOIN chat_members ON chats.id == chat_members.chat_id WHERE chat_members.user_id == ?',
-      [user_id]
+      `SELECT
+        chats.id,
+        chats.type,
+        chats.created_at,
+	      (
+          SELECT name FROM users WHERE id = (
+            SELECT user_id
+            FROM chat_members
+            WHERE user_id != ? AND chat_id = chats.id
+          )
+        ) AS recipient_name,
+        (
+          SELECT color FROM users WHERE id = (
+            SELECT user_id
+            FROM chat_members
+            WHERE user_id != ? AND chat_id = chats.id
+		      )
+	      ) AS recipient_color,
+        messages.text,
+        messages.time,
+        messages.status
+      FROM chats
+        JOIN chat_members ON chats.id = chat_members.chat_id
+        LEFT JOIN messages ON chats.last_message_id = messages.id
+      WHERE chat_members.user_id = ?
+`,
+      [user_id, user_id, user_id]
     );
-
-    for (const chat of chats) {
-      const recipientID = await db.get(
-        'SELECT user_id FROM chat_members WHERE user_id != ? AND chat_id = ?',
-        [user_id, chat.id]
-      );
-      const recipientInfo = await db.get(
-        'SELECT name, color FROM users WHERE id = ?',
-        [recipientID['user_id']]
-      );
-      chat['recipient_name'] = recipientInfo['name'];
-      chat['recipient_color'] = recipientInfo['color'];
-    }
-
+    console.log(chats)
     return chats;
   } catch (error) {
     console.log('index.js - функция getChats - ошибка получения пользовательских чатов', error);

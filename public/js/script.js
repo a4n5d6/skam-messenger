@@ -87,6 +87,21 @@ function selectChat(chatContainer) {
 // }
 
 
+function nowTime() {
+    const now = new Date();
+    
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
+}
+
+
 if (butLogout) {
     butLogout.addEventListener("click", () => {
         location.reload()
@@ -161,13 +176,15 @@ chatContainers.forEach(chatContainer => {
 if (textInfo) {
   textInfo.addEventListener("keydown", async (e) => { 
     if (e.key === "Enter") { 
+      const time = nowTime();
       const response = await fetch("api/send-message", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           message_text: textInfo.value, 
           chat_ID: localStorage.getItem("chatID"),
-          user_ID: userID
+          user_ID: userID,
+          time: time
         })
       });
 
@@ -176,23 +193,10 @@ if (textInfo) {
       if (response.ok) {
         if (result.success) {
           const messageData = result['message_data'];
-          // messageData = { id, chat_id, sender_id, text, time }
+          messageData = { id, chat_id, sender_id, text, time }
           
-          const div = document.createElement("div");  // контейнер для отображения сообщения
-          div.id = messageData['id'];
-          div.classList.add("message-container");
-          if (userID === messageData['sender_id']) {
-            div.classList.add("recipient");
-            // если id текущего пользователя совпадает с id отправителя
-          }
-          div.innerHTML = `
-            <p>${messageData['text']}</p>
-            <p>${messageData['time']}</p>
-          `;
-          messageContainer.appendChild(div);
-          const chatID =  localStorage.getItem("chatID");
-          const chatContainer = document.getElementById(chatID);
-          chatContainer.querySelector(".last-message-text").textContent = messageData['text'];
+          
+        //   
           // изменить время последнего сообщения в чате
           textInfo.value = "";
           audioSendMessage.play();
@@ -219,20 +223,20 @@ if (enterMessage) {
             if (response.ok) {
                 textInfo.value = "";
                 console.log(result);
-                const div = document.createElement("div");
-                div.classList.add("message-container");
-                if (userID == result.sender_id) {
-                        div.classList.add("recipient");
-                    };
-                    div.innerHTML = `
-                        <p>${result.message_text}</p>
-                        <span>${result.message_time}</span>
-                    `;//Формируем структуру  сообщения
-                    messageContainer.appendChild(div);
-                    const chatID =  localStorage.getItem("chatID");    
-                    const chatContainer = document.getElementById(chatID);
-                    chatContainer.querySelector(".last-message-time").textContent = result.message_time;
-                    chatContainer.querySelector(".last-message-text").textContent = result.message_text;
+                // const div = document.createElement("div");
+                // div.classList.add("message-container");
+                // if (userID == result.sender_id) {
+                //         div.classList.add("recipient");
+                //     };
+                //     div.innerHTML = `
+                //         <p>${result.message_text}</p>
+                //         <span>${result.message_time}</span>
+                //     `;//Формируем структуру  сообщения
+                //     messageContainer.appendChild(div);
+                //     const chatID =  localStorage.getItem("chatID");    
+                //     const chatContainer = document.getElementById(chatID);
+                //     chatContainer.querySelector(".last-message-time").textContent = result.message_time;
+                //     chatContainer.querySelector(".last-message-text").textContent = result.message_text;
                 }
                 console.log(textInfo.value, localStorage.getItem("chatID"));
                 audioSendMessage.play();
@@ -242,18 +246,18 @@ if (enterMessage) {
 
 socket.on("new-message", (message) => {
     // message - объект сообщения
-    const chatID = localStorage.getItem("chatID");
-    console.log(message);
+    const chatID = +localStorage.getItem("chatID");
+    console.log(message, chatID);
     if (message["chat_id"] === chatID) {
         const chatContainer = document.getElementById(chatID);
-        chatContainer.querySelector(".last-message-time").textContent = message["time"];
+        chatContainer.querySelector(".last-message-time").textContent = message["time"].slice(11, 16);
         chatContainer.querySelector(".last-message-text").textContent = message["text"];
         // message["chat_id"] - id чата, куда пришло новое сообщение
         // chatID - id выбранного чата
         appendMessage(message);
     } else {
         const chatContainer = document.getElementById(message["chat_id"]);
-        chatContainer.querySelector(".last-message-time").textContent = message["time"];
+        chatContainer.querySelector(".last-message-time").textContent = message["time"].slice(11, 16);
         chatContainer.querySelector(".last-message-text").textContent = message["text"];
         // Программа  получает новое сообщения, но сообщение приходит в другой чат
     }
