@@ -78,15 +78,6 @@ function selectChat(chatContainer) {
 }
 
 
-// function formatTime(timestamp) {
-//     const milliseconds = timestamp._seconds * 1000 + timestamp._nanoseconds / 1e6;
-//     const date = new Date(milliseconds);
-//     const hours = date.getHours().toString().padStart(2, "0");
-//     const minutes = date.getMinutes().toString().padStart(2, "0");
-//     return `${hours}:${minutes}`;
-// }
-
-
 function nowTime() {
     const now = new Date();
     
