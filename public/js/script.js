@@ -24,6 +24,7 @@ const userChats = document.querySelector(".user-chats");
 const typingSpan =  document.querySelector(".typing");
 const eye = document.querySelector(".eye-button");
 const inpPas = document.querySelector(".password");
+const messageMenu = document.getElementById("message-menu");
 
 
 // eye.addEventListener("click", () => {
@@ -34,14 +35,22 @@ const inpPas = document.querySelector(".password");
 //     }
 // });
 
+document.addEventListener("click", () => {
+    messageMenu.classList.add('hidden');
+});
 
 function appendMessage(message) {
     const time = message.time.slice(10, 16)
     const div = document.createElement("div");
+    div.addEventListener('contextmenu', (event) => {
+        messageMenu.classList.remove('hidden');
+        event.preventDefault(); 
+    });
     div.classList.add("message-container");
     if (userID == message.sender_id) {
         div.classList.add("recipient");
     };
+
     div.innerHTML = `
         <p>${message.text}</p>
         <span>${time}</span>
@@ -68,6 +77,7 @@ function selectChat(chatContainer) {
         const result = await response.json();
         
         if (response.ok) {
+
             console.log(result);
             messageContainer.innerHTML = "";
             result.messages.forEach(message => appendMessage(message));
@@ -91,6 +101,9 @@ function nowTime() {
     
     return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
 }
+
+
+
 
 
 if (butLogout) {
@@ -121,7 +134,7 @@ if (publicUserInfo) {
 }
 
 
-if (myAccountBtn) { // 
+if (myAccountBtn) {
     myAccountBtn.addEventListener("click", async () => {
         myModalWindow.classList.remove("hidden");
         const response = await fetch("api/get-my-user-info", {
@@ -185,9 +198,6 @@ if (textInfo) {
         if (result.success) {
           const messageData = result['message_data'];
           messageData = { id, chat_id, sender_id, text, time }
-          
-          
-        //   
           // изменить время последнего сообщения в чате
           textInfo.value = "";
           audioSendMessage.play();
@@ -213,24 +223,8 @@ if (enterMessage) {
             
             if (response.ok) {
                 textInfo.value = "";
-                console.log(result);
-                // const div = document.createElement("div");
-                // div.classList.add("message-container");
-                // if (userID == result.sender_id) {
-                //         div.classList.add("recipient");
-                //     };
-                //     div.innerHTML = `
-                //         <p>${result.message_text}</p>
-                //         <span>${result.message_time}</span>
-                //     `;//Формируем структуру  сообщения
-                //     messageContainer.appendChild(div);
-                //     const chatID =  localStorage.getItem("chatID");    
-                //     const chatContainer = document.getElementById(chatID);
-                //     chatContainer.querySelector(".last-message-time").textContent = result.message_time;
-                //     chatContainer.querySelector(".last-message-text").textContent = result.message_text;
-                }
-                console.log(textInfo.value, localStorage.getItem("chatID"));
                 audioSendMessage.play();
+            }
     });
 }
 

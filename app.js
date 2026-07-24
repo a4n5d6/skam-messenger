@@ -15,13 +15,15 @@ const io = socketIO(server);
 
 const renderChatContainerHelper = function(userСhat) {  // внести изменения
   const firstLetter = userСhat.recipient_name.at(0);
+  let time = "";
+  if (userСhat.time) time = userСhat.time.slice(11, 16);
   const html = `
     <div id="${userСhat.id}" class="chat-container">
       <div class="chat-avatar" style="background-color: ${userСhat.recipient_color}">${firstLetter}</div>
       <div class="chat-info">
         <div class="chat-info-row">
           <div class="chat-title">${userСhat.recipient_name}</div>
-          <div class="last-message-time">${userСhat.time}</div>
+          <div class="last-message-time">${time}</div>
         </div>
         <div class="last-message-text"></div>
       </div>

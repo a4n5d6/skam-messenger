@@ -23,33 +23,22 @@ async function getUserChats(user_id) { // функция получает чат
   try {
     const db = await getDatabase();
     const chats = await db.all(
-      `SELECT
-        chats.id,
-        chats.type,
-        chats.created_at,
-	      (
-          SELECT name FROM users WHERE id = (
-            SELECT user_id
-            FROM chat_members
-            WHERE user_id != ? AND chat_id = chats.id
-          )
-        ) AS recipient_name,
-        (
-          SELECT color FROM users WHERE id = (
-            SELECT user_id
-            FROM chat_members
-            WHERE user_id != ? AND chat_id = chats.id
-		      )
-	      ) AS recipient_color,
-        messages.text,
-        messages.time,
-        messages.status
-      FROM chats
-        JOIN chat_members ON chats.id = chat_members.chat_id
-        LEFT JOIN messages ON chats.last_message_id = messages.id
-      WHERE chat_members.user_id = ?
+      `SELECT 
+      chats.id, 
+      chats.type, 
+      chats.created_at, 
+      users.name AS recipient_name, 
+      users.color AS recipient_color, 
+      messages.text,
+      messages.time,
+      messages.status
+  FROM chats
+  JOIN chat_members cm1 ON chats.id = cm1.chat_id AND cm1.user_id = ?
+  LEFT JOIN chat_members cm2 ON chats.id = cm2.chat_id AND cm2.user_id != ?
+  LEFT JOIN users ON cm2.user_id = users.id
+  LEFT JOIN messages ON chats.last_message_id = messages.id;
 `,
-      [user_id, user_id, user_id]
+      [user_id, user_id]
     );
     console.log(chats)
     return chats;
