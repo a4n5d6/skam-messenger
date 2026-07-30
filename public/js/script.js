@@ -25,6 +25,7 @@ const typingSpan =  document.querySelector(".typing");
 const eye = document.querySelector(".eye-button");
 const inpPas = document.querySelector(".password");
 const messageMenu = document.getElementById("message-menu");
+const btnDelete = document.getElementById("btn-delete");
 
 
 // eye.addEventListener("click", () => {
@@ -40,12 +41,9 @@ document.addEventListener("click", () => {
 });
 
 function appendMessage(message) {
-    const time = message.time.slice(10, 16)
+    const time = message.time.slice(10, 16);
     const div = document.createElement("div");
-    div.addEventListener('contextmenu', (event) => {
-        messageMenu.classList.remove('hidden');
-        event.preventDefault(); 
-    });
+    div.id = `message-${message.id}`;
     div.classList.add("message-container");
     if (userID == message.sender_id) {
         div.classList.add("recipient");
@@ -55,8 +53,37 @@ function appendMessage(message) {
         <p>${message.text}</p>
         <span>${time}</span>
     `;//Формируем структуру  сообщения
+    
+    div.addEventListener('contextmenu', (event) => {
+        messageMenu.classList.remove('hidden');
+        event.preventDefault(); 
+        localStorage.setItem("messageId", div.id);
+    });
     messageContainer.appendChild(div);
 }
+
+
+btnDelete.addEventListener("click", async () => {
+    const messageId = localStorage.getItem("messageId");
+    if (!messageId) return;
+    const response = await fetch("api/del-message", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({messageId: messageId})
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+        if (result.success) {
+            // document.querySelector(messageId).remove();
+            console.log(messageId, result)
+            messageContainer.querySelector(`#${messageId}`).remove()
+            localStorage.removeItem("messageId");
+        }
+    }
+
+});
 
 
 function selectChat(chatContainer) {
@@ -197,7 +224,7 @@ if (textInfo) {
       if (response.ok) {
         if (result.success) {
           const messageData = result['message_data'];
-          messageData = { id, chat_id, sender_id, text, time }
+          // messageData = { id, chat_id, sender_id, text, time }
           // изменить время последнего сообщения в чате
           textInfo.value = "";
           audioSendMessage.play();

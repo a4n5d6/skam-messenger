@@ -218,8 +218,20 @@ router.post("/add-recipient", async (req, res) => {
 
 
 
-router.post("/del-recipient", (res, req) => {
+// router.post("/del-recipient", (res, req) => {
     
+// });
+
+
+router.post("/del-message", async (req, res) => {
+    const messageId = req.body.messageId.slice(8, 10);
+    const db = await getDatabase();
+    try {
+        const result = await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
+        return res.json({ success: true });
+    } catch {
+        return res.json({ success: false });
+    }
 });
 
 
