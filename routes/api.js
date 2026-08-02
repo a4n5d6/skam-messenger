@@ -53,6 +53,22 @@ router.post("/send-message", async (req, res) => {
     }
 });
 
+router.post("/del-message", async (req, res) => {
+    const messageId = req.body.messageId.slice(8, 10);
+    const chat_ID = req.body.chatID;
+    const db = await getDatabase();
+    try {
+        const result = await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
+        const io = req.app.get("io");
+        const members = await db.all("SELECT user_id FROM chat_members WHERE chat_id = ?", [chat_ID]);
+        members.forEach(member => {
+            io.to(`user_${member["user_id"]}`).emit("delete-message", {messageId: req.body.messageId, chat_ID: chat_ID});
+        });
+        return res.json({ success: true });
+    } catch {
+        return res.json({ success: false });
+    }
+});
 
 router.post("/get-user-info", async (req, res) => {
 
@@ -223,16 +239,6 @@ router.post("/add-recipient", async (req, res) => {
 // });
 
 
-router.post("/del-message", async (req, res) => {
-    const messageId = req.body.messageId.slice(8, 10);
-    const db = await getDatabase();
-    try {
-        const result = await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
-        return res.json({ success: true });
-    } catch {
-        return res.json({ success: false });
-    }
-});
 
 
 module.exports = router;
