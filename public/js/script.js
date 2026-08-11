@@ -90,10 +90,19 @@ socket.on("delete-message", (data) => {
     const messageId = data.messageId; // id сообщения, которое нужно удалить
     const chat_ID = data.chatID; // id чата, из которого нужно удалить сообщение
     const chatID = +localStorage.getItem("chatID"); // id открытого на странице чата
-    
+    const lastMessageText = data.lastMessageText;
+    const lastMessageTime = data.lastMessageTime;
+console.log(lastMessageText, lastMessageTime)
     if (chat_ID === chatID) {
         // если сообщение нужно удалить из текущего чата
         messageContainer.querySelector(`#${messageId}`).remove();
+        const chatContainer = document.getElementById(chatID);
+        if (lastMessageTime !== null) {
+            chatContainer.querySelector(".last-message-time").textContent = lastMessageTime.slice(11, 16);
+        } else {
+            chatContainer.querySelector(".last-message-time").textContent = "";
+        }
+        chatContainer.querySelector(".last-message-text").textContent = lastMessageText;
     } else {
         messageContainer.querySelector(`#${messageId}`).remove();
     }
@@ -234,55 +243,65 @@ chatContainers.forEach(chatContainer => {
 
 
 if (textInfo) {
-  textInfo.addEventListener("keydown", async (e) => { 
-    if (e.key === "Enter") { 
-      const time = nowTime();
-      const response = await fetch("api/send-message", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          message_text: textInfo.value, 
-          chat_ID: localStorage.getItem("chatID"),
-          user_ID: userID,
-          time: time
-        })
-      });
+    textInfo.addEventListener("keydown", async (e) => { 
+        if (e.key === "Enter") { 
+            const time = nowTime();
+            const response = await fetch("api/send-message", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    message_text: textInfo.value, 
+                    chat_ID: localStorage.getItem("chatID"),
+                    user_ID: userID,
+                    time: time
+                })
+            });
 
-      const result = await response.json();
+            const result = await response.json();
 
-      if (response.ok) {
-        if (result.success) {
-          const messageData = result['message_data'];
-          // messageData = { id, chat_id, sender_id, text, time }
-          // изменить время последнего сообщения в чате
-          textInfo.value = "";
-          audioSendMessage.play();
+            if (response.ok) {
+                if (result.success) {
+                    const messageData = result['message_data'];
+                    // messageData = { id, chat_id, sender_id, text, time }
+                    // изменить время последнего сообщения в чате
+                    textInfo.value = "";
+                    audioSendMessage.play();
+                }
+            }
         }
-      }
-    }
-  });
+    });
 }
+
 
 
 if (enterMessage) {
     enterMessage.addEventListener("click", async () => {
+        const time = nowTime();
         const response = await fetch("api/send-message", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
                 message_text: textInfo.value, 
-                chat_ID: localStorage.getItem("chatID"), 
-                user_ID: userID}) //Отправляем на сервер текст сообщения
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
+                chat_ID: localStorage.getItem("chatID"),
+                user_ID: userID,
+                time: time
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            if (result.success) {
+                const messageData = result['message_data'];
+                // messageData = { id, chat_id, sender_id, text, time }
+                // изменить время последнего сообщения в чате
                 textInfo.value = "";
                 audioSendMessage.play();
             }
+        }
     });
 }
+
 
 
 socket.on("new-message", (message) => {
