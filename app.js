@@ -25,7 +25,7 @@ const renderChatContainerHelper = function(userСhat) {  // внести изм�
           <div class="chat-title">${userСhat.recipient_name}</div>
           <div class="last-message-time">${time}</div>
         </div>
-        <div class="last-message-text"></div>
+        <div class="last-message-text">${userСhat.text || ""}</div>
       </div>
     </div>
   `;

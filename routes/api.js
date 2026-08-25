@@ -62,10 +62,10 @@ router.post("/del-message", async (req, res) => {
         await db.exec('BEGIN TRANSACTION');
         await db.run(`
             UPDATE chats SET last_message_id = (
-                SELECT id FROM messages WHERE chat_id = ? AND id <> ? ORDER BY time LIMIT 1
+                SELECT id FROM messages WHERE chat_id = ? AND id <> ? ORDER BY time DESC LIMIT 1
             ) WHERE id = ?`, [+chat_ID, +messageId, +chat_ID]);
         await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
-        const lastMessage = await db.get("SELECT * FROM messages WHERE chat_id = ? ORDER BY time LIMIT 1", [+chat_ID]);
+        const lastMessage = await db.get("SELECT * FROM messages WHERE chat_id = ? ORDER BY time DESC LIMIT 1", [+chat_ID]);
         let last_message_text; 
         let last_message_time;
         if (!lastMessage || lastMessage === null) {
@@ -112,10 +112,16 @@ router.post("/del-message", async (req, res) => {
 });
 
 router.post("/get-user-info", async (req, res) => {
+    const userID = req.session.userID;
+    const chatID = req.body.chatID;
+    try {
+        const db = await getDatabase();
+        const recpInfo = await db.get("SELECT name, username, last_seen, status FROM users WHERE id = (SELECT user_id FROM chat_members WHERE chat_id = ? AND user_id != ?)", [chatID, userID]);
+        res.json( {success: true, data: recpInfo} );
+    } catch (error) {
+        res.json( {success: false, message: "Ошибка"} );
+    }
 
-
-    // const userID = req.session.userID;
-    // const chatID = req.body.chatID;
     // const documentSnapshot = await db.collection("chats").doc(chatID).get();
     // const members = documentSnapshot.get("members");
     // const recipientID = members.find(memberId => memberId !== userID);
@@ -126,7 +132,6 @@ router.post("/get-user-info", async (req, res) => {
     //     "last_seen": recipientData.last_seen,
     //     "status": recipientData.status
     // };
-    res.json(data);
 });
 
 
@@ -235,43 +240,79 @@ router.post("/add-recipient", async (req, res) => {
     const recpID = req.body.recipientID;
     const user_ID = req.session.userID;
     const db = await getDatabase();
+
     try {
         await db.exec('BEGIN TRANSACTION');
-        
-        const result = await db.run('INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)', ["2026-06-19 18:40:00"]);
-        const newID = result.lastID; // id созданной записи в таблице chats
-        
-        await Promise.all([
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]), // добавить себя в таблицу chat_members
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])  // добавить собеседника в таблицу chat_members
-        ]);
-        const recpData = await db.get('SELECT name, color FROM users WHERE id = ?', [recpID]);
-        await db.exec('COMMIT');
-        const io = req.app.get("io");
-        const data = {
-            'members': [user_ID, recpID],
-            'members_details': {
-                'member_names': {
-                    [user_ID]: req.session.userName,
-                    [recpID]: recpData.name,
+
+        // Проверка существования чата между пользователями
+        const a = await db.get(`
+            SELECT 
+                chat_members.chat_id 
+            FROM 
+                chat_members 
+            JOIN 
+                chats ON chat_members.chat_id = chats.id 
+            WHERE 
+                chat_members.user_id IN (?, ?) 
+            GROUP BY 
+                chat_members.chat_id 
+            HAVING 
+                COUNT(DISTINCT chat_members.user_id) = 2
+        `, [user_ID, recpID]);
+
+        console.log(a)
+        if (a === undefined) {
+            // Создание нового чата
+            const result = await db.run(
+                'INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)', 
+                ["2026-06-19 18:40:00"]
+            );
+            const newID = result.lastID;
+            
+            // Привязка участников к созданному чату
+            await Promise.all([
+                db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]),
+                db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])
+            ]);
+
+            // Получение данных собеседника
+            const recpData = await db.get('SELECT name, color FROM users WHERE id = ?', [recpID]);
+            
+            await db.exec('COMMIT');
+    
+            // Подготовка данных для отправки через Socket.io
+            const io = req.app.get("io");
+            const data = {
+                'members': [user_ID, recpID],
+                'members_details': {
+                    'member_names': {
+                        [user_ID]: req.session.userName,
+                        [recpID]: recpData.name,
+                    },
+                    'member_colors': {
+                        [user_ID]: req.session.userColor,
+                        [recpID]: recpData.color,
+                    }
                 },
-                'member_colors': {
-                    [user_ID]: req.session.userColor,
-                    [recpID]: recpData.color,
-                }
-            },
-            chat_id: newID
-        };
-        const members = [user_ID, recpID];
-        members.forEach(memberID => {//Список собеседников
-            io.to(`user_${memberID}`).emit("chat-created", data);
-        });
-        return res.json({ success: true, data });
+                chat_id: newID
+            };
+    
+            // Уведомление участников о создании чата
+            const members = [user_ID, recpID];
+            members.forEach(memberID => {
+                io.to(`user_${memberID}`).emit("chat-created", data);
+            });
+
+            return res.json({ success: true, data });
+        } else {
+            return res.json({ success: false, message: "Чат с таким пользователем уже есть"});
+        }
     } catch (error) {
         await db.exec('ROLLBACK');
-        return res.json({ success: true, error: error.message });
+        return res.json({ success: false, error: error.message });
     }
 });
+
 
 
 

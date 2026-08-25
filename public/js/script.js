@@ -27,14 +27,15 @@ const inpPas = document.querySelector(".password");
 const messageMenu = document.getElementById("message-menu");
 const btnDelete = document.getElementById("btn-delete");
 
-
-// eye.addEventListener("click", () => {
-//     if (inpPas.getAttribute("type") === "password") {
-//         inpPas.setAttribute("type", "text");
-//     } else {
-//         inpPas.setAttribute("type", "password");
-//     }
-// });
+if (eye) {
+    eye.addEventListener("click", () => {
+        if (inpPas.getAttribute("type") === "password") {
+            inpPas.setAttribute("type", "text");
+        } else {
+            inpPas.setAttribute("type", "password");
+        }
+    });
+}
 
 document.addEventListener("click", () => {
     messageMenu.classList.add('hidden');
@@ -88,12 +89,12 @@ btnDelete.addEventListener("click", async () => {
 
 socket.on("delete-message", (data) => {
     const messageId = data.messageId; // id сообщения, которое нужно удалить
-    const chat_ID = data.chatID; // id чата, из которого нужно удалить сообщение
+    const chat_ID = data.chat_ID; // id чата, из которого нужно удалить сообщение
     const chatID = +localStorage.getItem("chatID"); // id открытого на странице чата
     const lastMessageText = data.lastMessageText;
     const lastMessageTime = data.lastMessageTime;
-console.log(lastMessageText, lastMessageTime)
-    if (chat_ID === chatID) {
+    console.log(lastMessageText, lastMessageTime)
+    if (chat_ID == chatID) {
         // если сообщение нужно удалить из текущего чата
         messageContainer.querySelector(`#${messageId}`).remove();
         const chatContainer = document.getElementById(chatID);
@@ -105,6 +106,12 @@ console.log(lastMessageText, lastMessageTime)
         chatContainer.querySelector(".last-message-text").textContent = lastMessageText;
     } else {
         messageContainer.querySelector(`#${messageId}`).remove();
+        if (lastMessageTime !== null) {
+            chatContainer.querySelector(".last-message-time").textContent = lastMessageTime.slice(11, 16);
+        } else {
+            chatContainer.querySelector(".last-message-time").textContent = "";
+        }
+        chatContainer.querySelector(".last-message-text").textContent = lastMessageText;
     }
     
         // message - объект сообщения
@@ -190,10 +197,10 @@ if (publicUserInfo) {
         const result = await response.json();
         console.log(result);
         recipientInfo.innerHTML = `
-        <span class="name">${result.name}</span>
-        <span class="userName">${result.username}</span>
-        <span class="last_seen">${formatTime(result.last_seen)}</span>
-        <span class="status">${result.status}</span>
+        <span class="name">${result.data.name}</span>
+        <span class="userName">${result.data.username}</span>
+        <span class="last_seen">${result.data.last_seen.slice(10, 16)}</span>
+        <span class="status">${result.data.status}</span>
         `;
     });
 }
@@ -245,6 +252,40 @@ chatContainers.forEach(chatContainer => {
 if (textInfo) {
     textInfo.addEventListener("keydown", async (e) => { 
         if (e.key === "Enter") { 
+            if (textInfo.value) {
+                const time = nowTime();
+                const response = await fetch("api/send-message", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        message_text: textInfo.value, 
+                        chat_ID: localStorage.getItem("chatID"),
+                        user_ID: userID,
+                        time: time
+                    })
+                });
+    
+                const result = await response.json();
+    
+                if (response.ok) {
+                    if (result.success) {
+                        const messageData = result['message_data'];
+                        // messageData = { id, chat_id, sender_id, text, time }
+                        // изменить время последнего сообщения в чате
+                        textInfo.value = "";
+                        audioSendMessage.play();
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
+if (enterMessage) {
+    enterMessage.addEventListener("click", async () => {
+        if (textInfo.value) {
             const time = nowTime();
             const response = await fetch("api/send-message", {
                 method: "POST",
@@ -256,9 +297,9 @@ if (textInfo) {
                     time: time
                 })
             });
-
+    
             const result = await response.json();
-
+    
             if (response.ok) {
                 if (result.success) {
                     const messageData = result['message_data'];
@@ -267,36 +308,6 @@ if (textInfo) {
                     textInfo.value = "";
                     audioSendMessage.play();
                 }
-            }
-        }
-    });
-}
-
-
-
-if (enterMessage) {
-    enterMessage.addEventListener("click", async () => {
-        const time = nowTime();
-        const response = await fetch("api/send-message", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                message_text: textInfo.value, 
-                chat_ID: localStorage.getItem("chatID"),
-                user_ID: userID,
-                time: time
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            if (result.success) {
-                const messageData = result['message_data'];
-                // messageData = { id, chat_id, sender_id, text, time }
-                // изменить время последнего сообщения в чате
-                textInfo.value = "";
-                audioSendMessage.play();
             }
         }
     });
@@ -376,7 +387,7 @@ if (searchRecipient) {
                             body: JSON.stringify({"recipientID": recipientid})
                         });
                         const result = await response.json();
-                            if (response.ok) {
+                        if (response.ok) {
                             console.log(result);
                         }
 
