@@ -87,6 +87,7 @@ btnDelete.addEventListener("click", async () => {
 });
 
 
+
 socket.on("delete-message", (data) => {
     const messageId = data.messageId; // id сообщения, которое нужно удалить
     const chat_ID = data.chat_ID; // id чата, из которого нужно удалить сообщение
@@ -113,21 +114,6 @@ socket.on("delete-message", (data) => {
         }
         chatContainer.querySelector(".last-message-text").textContent = lastMessageText;
     }
-    
-        // message - объект сообщения
-        // console.log(message, chatID);
-    //     const chatContainer = document.getElementById(chatID);
-    //     chatContainer.querySelector(".last-message-time").textContent = message["time"].slice(11, 16);
-    //     chatContainer.querySelector(".last-message-text").textContent = message["text"];
-    //     // message["chat_id"] - id чата, куда пришло новое сообщение
-    //     // chatID - id выбранного чата
-    //     appendMessage(message);
-    // } else {
-    //     const chatContainer = document.getElementById(message["chat_id"]);
-    //     chatContainer.querySelector(".last-message-time").textContent = message["time"].slice(11, 16);
-    //     chatContainer.querySelector(".last-message-text").textContent = message["text"];
-    //     // Программа  получает новое сообщения, но сообщение приходит в другой чат
-    // }
 });
 
 
@@ -158,6 +144,7 @@ function selectChat(chatContainer) {
         }
     });
 }
+
 
 
 function nowTime() {
@@ -228,6 +215,7 @@ if (myAccountBtn) {
 }
 
 
+
 if (closeModalWindow) {
     closeModalWindow.addEventListener("click",() => {
         modalWindow.classList.add("hidden");
@@ -280,6 +268,7 @@ if (textInfo) {
         }
     });
 }
+
 
 
 

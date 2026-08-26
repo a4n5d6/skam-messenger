@@ -1,33 +1,28 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { getDatabase } = require("../db/db.js");
+const { getDatabase } = require('../db/db.js');
 
 
-async function getMessages(documentID) {
+router.post('/get-chat-messages', async (req, res) => {
+    const chatId = req.body.id;
+    try {
+        const sqlString = 'SELECT * FROM messages WHERE chat_id = ? ORDER BY time ASC;';
+        const params = [chatId];
+        const db = await getDatabase();
+        const messages = await db.all(sqlString, params);
+        res.json({ success: true, messages });
+    } catch {
+        console.log(error);
+        res.json({ success: false, message: "Сообщения не загрузились (((" });
 
-}
-
-
-router.post("/get-chat-messages", async (req, res) => {
-  const chatId = req.body.id
-  try {
-    const sqlString = "SELECT * FROM messages WHERE chat_id = ? ORDER BY time ASC;"
-    const params = [chatId];
-    const db = await getDatabase();
-    const messages = await db.all(sqlString, params);
-    res.json({ success: true, messages });
-  } catch {
-    console.log(error)
-  }
-  
-  //res.json({success: "OK", messages: messages});
+    }
 });
 
 
-router.post("/send-message", async (req, res) => {
+router.post('/send-message', async (req, res) => {
     const messageText = req.body.message_text;
     const chat_ID = req.body.chat_ID;
-    const currentUser_ID = req.body.user_ID;  // это отправитель
+    const currentUser_ID = req.body.user_ID; // это отправитель
     const time = req.body.time;
     const db = await getDatabase();
     try {
@@ -37,36 +32,58 @@ router.post("/send-message", async (req, res) => {
             [chat_ID, currentUser_ID, messageText, time]
         );
         const newID = result.lastID;
-        const messageData = await db.get("SELECT * FROM messages WHERE id = ?", [newID]);
-        await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?", [newID, chat_ID]);
+        const messageData = await db.get(
+            'SELECT * FROM messages WHERE id = ?',
+            [newID]
+        );
+        await db.run('UPDATE chats SET last_message_id = ? WHERE id = ?', [
+            newID,
+            chat_ID,
+        ]);
         await db.exec('COMMIT');
-        const io = req.app.get("io");
-        const members = await db.all("SELECT user_id FROM chat_members WHERE chat_id = ?", [chat_ID]);
-        members.forEach(member => {
-            io.to(`user_${member["user_id"]}`).emit("new-message", messageData);
+        const io = req.app.get('io');
+        const members = await db.all(
+            'SELECT user_id FROM chat_members WHERE chat_id = ?',
+            [chat_ID]
+        );
+        members.forEach((member) => {
+            io.to(`user_${member['user_id']}`).emit(
+                'new-message',
+                messageData
+            );
         });
-        console.log('Сообщение отправлено', members)
-        res.json({ success: true, message: 'Сообщение отправлено', message_data: messageData });
+        console.log('Сообщение отправлено', members);
+        res.json({
+            success: true,
+            message: 'Сообщение отправлено',
+            message_data: messageData,
+        });
     } catch {
         await db.exec('ROLLBACK');
         res.json({ success: false, message: 'Сообщение не отправлено' });
     }
 });
 
-router.post("/del-message", async (req, res) => {
+
+router.post('/del-message', async (req, res) => {
     const messageId = req.body.messageId.slice(8, 10);
     const chat_ID = req.body.chatID;
     const db = await getDatabase();
-    console.log(chat_ID, messageId);
     try {
         await db.exec('BEGIN TRANSACTION');
-        await db.run(`
+        await db.run(
+            `
             UPDATE chats SET last_message_id = (
                 SELECT id FROM messages WHERE chat_id = ? AND id <> ? ORDER BY time DESC LIMIT 1
-            ) WHERE id = ?`, [+chat_ID, +messageId, +chat_ID]);
-        await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
-        const lastMessage = await db.get("SELECT * FROM messages WHERE chat_id = ? ORDER BY time DESC LIMIT 1", [+chat_ID]);
-        let last_message_text; 
+            ) WHERE id = ?`,
+            [+chat_ID, +messageId, +chat_ID]
+        );
+        await db.run('DELETE FROM messages WHERE id = ?', [+messageId]);
+        const lastMessage = await db.get(
+            'SELECT * FROM messages WHERE chat_id = ? ORDER BY time DESC LIMIT 1',
+            [+chat_ID]
+        );
+        let last_message_text;
         let last_message_time;
         if (!lastMessage || lastMessage === null) {
             last_message_text = null;
@@ -75,41 +92,28 @@ router.post("/del-message", async (req, res) => {
             last_message_text = lastMessage.text;
             last_message_time = lastMessage.time;
         }
-        const io = req.app.get("io");
-        const members = await db.all("SELECT user_id FROM chat_members WHERE chat_id = ?", [+chat_ID]);
-        members.forEach(member => {
-            io.to(`user_${member["user_id"]}`).emit("delete-message", {
+        const io = req.app.get('io');
+        const members = await db.all(
+            'SELECT user_id FROM chat_members WHERE chat_id = ?',
+            [+chat_ID]
+        );
+        members.forEach((member) => {
+            io.to(`user_${member['user_id']}`).emit('delete-message', {
                 messageId: req.body.messageId,
                 chat_ID: chat_ID,
                 lastMessageText: last_message_text,
-                lastMessageTime: last_message_time
+                lastMessageTime: last_message_time,
             });
         });
         await db.exec('COMMIT');
         return res.json({ success: true });
     } catch (error) {
-        console.log(messageId, chat_ID, error)
+        console.log(messageId, chat_ID, error);
         await db.exec('ROLLBACK');
         return res.json({ success: false });
     }
-    // try {
-    //     await db.exec('BEGIN TRANSACTION');
-    //     await db.run("DELETE FROM messages WHERE id = ?", [+messageId]);
-    //     const lastMessage = await db.get("SELECT * FROM messages WHERE chat_id = ? ORDER BY time DESC LIMIT 1", [chat_ID]);
-    //     console.log(lastMessage);
-    //     await db.run("UPDATE chats SET last_message_id = ? WHERE id = ?", [lastMessage.id, lastMessage.chat_id]);
-    //     const io = req.app.get("io");
-    //     const members = await db.all("SELECT user_id FROM chat_members WHERE chat_id = ?", [chat_ID]);
-    //     members.forEach(member => {
-    //         io.to(`user_${member["user_id"]}`).emit("delete-message", {messageId: req.body.messageId, chat_ID: chat_ID, lastMessageText: lastMessage.text, lastMessageTime: lastMessage.time});
-    //     });
-    //     await db.exec('COMMIT');
-    //     return res.json({ success: true });
-    // } catch {
-    //     await db.exec('ROLLBACK');
-    //     return res.json({ success: false });
-    // }
 });
+
 
 router.post("/get-user-info", async (req, res) => {
     const userID = req.session.userID;
@@ -121,17 +125,6 @@ router.post("/get-user-info", async (req, res) => {
     } catch (error) {
         res.json( {success: false, message: "Ошибка"} );
     }
-
-    // const documentSnapshot = await db.collection("chats").doc(chatID).get();
-    // const members = documentSnapshot.get("members");
-    // const recipientID = members.find(memberId => memberId !== userID);
-    // const recipientData = (await db.collection("users").doc(recipientID).get()).data();
-    // const data = {
-    //     "name": recipientData.name,
-    //     "username": recipientData.username,
-    //     "last_seen": recipientData.last_seen,
-    //     "status": recipientData.status
-    // };
 });
 
 
@@ -217,6 +210,7 @@ router.post("/log", async (req, res) => {
         
     }
 });
+
 
 
 router.post("/find-recipient", async (req, res) => {
@@ -312,6 +306,7 @@ router.post("/add-recipient", async (req, res) => {
         return res.json({ success: false, error: error.message });
     }
 });
+
 
 
 
