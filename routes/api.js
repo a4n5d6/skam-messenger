@@ -240,67 +240,61 @@ router.post("/add-recipient", async (req, res) => {
 
         // Проверка существования чата между пользователями
         const a = await db.get(`
-            SELECT 
-                chat_members.chat_id 
-            FROM 
-                chat_members 
-            JOIN 
-                chats ON chat_members.chat_id = chats.id 
-            WHERE 
-                chat_members.user_id IN (?, ?) 
-            GROUP BY 
-                chat_members.chat_id 
-            HAVING 
-                COUNT(DISTINCT chat_members.user_id) = 2
+            SELECT cm1.chat_id
+            FROM chat_members cm1
+            JOIN chat_members cm2 ON cm1.chat_id = cm2.chat_id
+            JOIN chats c ON cm1.chat_id = c.id
+            WHERE cm1.user_id = ? AND cm2.user_id = ? AND c.type = "private"
+            LIMIT 1
         `, [user_ID, recpID]);
 
-        console.log(a)
-        if (a === undefined) {
-            // Создание нового чата
-            const result = await db.run(
-                'INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)', 
-                ["2026-06-19 18:40:00"]
-            );
-            const newID = result.lastID;
-            
-            // Привязка участников к созданному чату
-            await Promise.all([
-                db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]),
-                db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])
-            ]);
-
-            // Получение данных собеседника
-            const recpData = await db.get('SELECT name, color FROM users WHERE id = ?', [recpID]);
-            
-            await db.exec('COMMIT');
-    
-            // Подготовка данных для отправки через Socket.io
-            const io = req.app.get("io");
-            const data = {
-                'members': [user_ID, recpID],
-                'members_details': {
-                    'member_names': {
-                        [user_ID]: req.session.userName,
-                        [recpID]: recpData.name,
-                    },
-                    'member_colors': {
-                        [user_ID]: req.session.userColor,
-                        [recpID]: recpData.color,
-                    }
-                },
-                chat_id: newID
-            };
-    
-            // Уведомление участников о создании чата
-            const members = [user_ID, recpID];
-            members.forEach(memberID => {
-                io.to(`user_${memberID}`).emit("chat-created", data);
-            });
-
-            return res.json({ success: true, data });
-        } else {
+        console.log(a);
+        if (a !== undefined) {
+            await db.exec('ROLLBACK');
             return res.json({ success: false, message: "Чат с таким пользователем уже есть"});
         }
+        // Создание нового чата
+        const result = await db.run(
+            'INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)', 
+            ["2026-06-19 18:40:00"]
+        );
+        const newID = result.lastID;
+        
+        // Привязка участников к созданному чату
+        await Promise.all([
+            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]),
+            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])
+        ]);
+
+        // Получение данных собеседника
+        const recpData = await db.get('SELECT name, color FROM users WHERE id = ?', [recpID]);
+        
+        await db.exec('COMMIT');
+
+        // Подготовка данных для отправки через Socket.io
+        const io = req.app.get("io");
+        const data = {
+            'members': [user_ID, recpID],
+            'members_details': {
+                'member_names': {
+                    [user_ID]: req.session.userName,
+                    [recpID]: recpData.name,
+                },
+                'member_colors': {
+                    [user_ID]: req.session.userColor,
+                    [recpID]: recpData.color,
+                }
+            },
+            chat_id: newID
+        };
+
+        // Уведомление участников о создании чата
+        const members = [user_ID, recpID];
+        members.forEach(memberID => {
+            io.to(`user_${memberID}`).emit("chat-created", data);
+        });
+
+        return res.json({ success: true, data });
     } catch (error) {
         await db.exec('ROLLBACK');
         return res.json({ success: false, error: error.message });

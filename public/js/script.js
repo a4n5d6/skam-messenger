@@ -327,7 +327,6 @@ socket.on("new-message", (message) => {
 socket.on("chat-created", (data) => {
     //data - it"s object by my chat, include chat id
     const recipientID = data["members"].find(memberId => memberId !== userID);
-    console.log(recipientID, userID);
     const chatTitle = data["members_details"]["member_names"][recipientID];
     const firstLetter = chatTitle.charAt(0);
 
@@ -370,6 +369,7 @@ if (searchRecipient) {
                     findedUser.classList.remove("hidden");
                     console.log(recipientid);
                     buttonAdd.addEventListener("click", async () => {
+                        buttonAdd.setAttribute("disabled", "true");
                         const response = await fetch("/api/add-recipient", {
                             method: "POST" ,
                             headers: {"Content-Type": "application/json"},
@@ -377,9 +377,11 @@ if (searchRecipient) {
                         });
                         const result = await response.json();
                         if (response.ok) {
+                            searchRecipient.value = "";
+                            findedUser.classList.add("hidden");
                             console.log(result);
                         }
-
+                        buttonAdd.removeAttribute("disabled");
                     });
                     buttonDel.addEventListener("click", async () => {
                         
@@ -412,7 +414,7 @@ socket.on("user_typing", (data) => {
 });
 
 
-buttonAdd.addEventListener("click", () => {
-    searchRecipient.value = "";
-    findedUser.innerHTML = "";
-});
+// buttonAdd.addEventListener("click", () => {
+//     searchRecipient.value = "";
+//     findedUser.innerHTML = "";
+// });
