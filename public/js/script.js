@@ -350,52 +350,124 @@ socket.on("chat-created", (data) => {
 });
 
 
+// if (searchRecipient) {
+//     searchRecipient.addEventListener("keydown", async (event) => {
+//         if (event.key === "Enter") {
+//             const inputValue  = searchRecipient.value;
+//             const response = await fetch("/api/find-recipient", {
+//                 method: "POST",
+//                 headers: {"Content-Type": "application/json"},
+//                 body: JSON.stringify({inputValue: inputValue})
+//             });
+//             const result = await response.json();
+//             if (result.success === true) {
+//                 if (result.recpUsername) {
+//                     console.log(result)
+//                     const recipientUserName = result.recpUsername.username;
+//                     const recipientid = result.recpUsername.id;
+//                     findedUserInfo.textContent = `${recipientUserName}`;
+//                     findedUser.classList.remove("hidden");
+//                     console.log(recipientid);
+//                     buttonAdd.addEventListener("click", async () => {
+//                         buttonAdd.setAttribute("disabled", "true");
+//                         const response = await fetch("/api/add-recipient", {
+//                             method: "POST" ,
+//                             headers: {"Content-Type": "application/json"},
+//                             body: JSON.stringify({"recipientID": recipientid})
+//                         });
+//                         const result = await response.json();
+//                         if (response.ok) {
+//                             searchRecipient.value = "";
+//                             findedUser.classList.add("hidden");
+//                             console.log(result);
+//                         }
+//                         buttonAdd.removeAttribute("disabled");
+//                     });
+//                     buttonDel.addEventListener("click", async () => {
+                        
+//                     });
+//                 } else {
+//                     console.log("Вы не подходите по критериям, поэтому с вами никто общаться не будет...")
+//                 }
+//             } else {
+//                 console.log(result.message)
+//             }
+
+
+//     }});
+// }
+
+
+// ID текущего найденного пользователя
+let currentRecipientId = null;
+
 if (searchRecipient) {
     searchRecipient.addEventListener("keydown", async (event) => {
-        if (event.key === "Enter") {
-            const inputValue  = searchRecipient.value;
+        if (event.key !== "Enter") return;
+
+        const inputValue = searchRecipient.value.trim();
+        if (!inputValue) return;
+
+        try {
             const response = await fetch("/api/find-recipient", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({inputValue: inputValue})
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inputValue })
             });
+
             const result = await response.json();
-            if (result.success === true) {
-                if (result.recpUsername) {
-                    console.log(result)
-                    const recipientUserName = result.recpUsername.username;
-                    const recipientid = result.recpUsername.id;
-                    findedUserInfo.textContent = `${recipientUserName}`;
-                    findedUser.classList.remove("hidden");
-                    console.log(recipientid);
-                    buttonAdd.addEventListener("click", async () => {
-                        buttonAdd.setAttribute("disabled", "true");
-                        const response = await fetch("/api/add-recipient", {
-                            method: "POST" ,
-                            headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({"recipientID": recipientid})
-                        });
-                        const result = await response.json();
-                        if (response.ok) {
-                            searchRecipient.value = "";
-                            findedUser.classList.add("hidden");
-                            console.log(result);
-                        }
-                        buttonAdd.removeAttribute("disabled");
-                    });
-                    buttonDel.addEventListener("click", async () => {
-                        
-                    });
-                } else {
-                    console.log("Вы не подходите по критериям, поэтому с вами никто общаться не будет...")
-                }
+
+            if (result.success && result.recpUsername) {
+                const recipientUserName = result.recpUsername.username;
+                currentRecipientId = result.recpUsername.id; 
+                findedUserInfo.textContent = `${recipientUserName}`;
+                findedUser.classList.remove("hidden");
             } else {
-                console.log(result.message)
+                currentRecipientId = null;
+                findedUser.classList.add("hidden");
+                console.log(result.message || "Пользователь не найден!");
             }
+        } catch (err) {
+            console.error("Ошибка при поиске:", err);
+        }
+    });
 
+    buttonAdd.addEventListener("click", async () => {
+        if (!currentRecipientId) return;
 
-    }});
+        buttonAdd.setAttribute("disabled", "true");
+
+        try {
+            const response = await fetch("/api/add-recipient", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ "recipientID": currentRecipientId })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                searchRecipient.value = "";
+                findedUser.classList.add("hidden");
+                currentRecipientId = null; // Сбрасываем ID
+                console.log("Чат успешно создан:", result);
+            } else {
+                console.log(result.message || "Не удалось добавить пользователя");
+            }
+        } catch (err) {
+            console.error("Ошибка при добавлении:", err);
+        } finally {
+            buttonAdd.removeAttribute("disabled");
+        }
+    });
+
+    buttonDel.addEventListener("click", () => {
+        searchRecipient.value = "";
+        findedUser.classList.add("hidden");
+        currentRecipientId = null;
+    });
 }
+
 
 //Индикатор того, что пользователь печатает
 textInfo.addEventListener("input", () => { // Я печатаю
