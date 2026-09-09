@@ -26,6 +26,9 @@ const eye = document.querySelector(".eye-button");
 const inpPas = document.querySelector(".password");
 const messageMenu = document.getElementById("message-menu");
 const btnDelete = document.getElementById("btn-delete");
+const delChatBtn = document.querySelector(".del-chat-btn");
+const delChatDiv = document.querySelector(".del-chat-div")
+
 
 if (eye) {
     eye.addEventListener("click", () => {
@@ -37,9 +40,11 @@ if (eye) {
     });
 }
 
-document.addEventListener("click", () => {
-    messageMenu.classList.add('hidden');
-});
+if (messageMenu) {
+    document.addEventListener("click", () => {
+        messageMenu.classList.add('hidden');
+    });
+} 
 
 function appendMessage(message) {
     const time = message.time.slice(10, 16);
@@ -63,28 +68,29 @@ function appendMessage(message) {
     messageContainer.appendChild(div);
 }
 
+if (btnDelete) {
+    btnDelete.addEventListener("click", async () => {
+        const messageId = localStorage.getItem("messageId");
+        const chatID = localStorage.getItem("chatID");
+        if (!messageId) return;
+        const response = await fetch("api/del-message", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({messageId: messageId, chatID: chatID})
+        });
 
-btnDelete.addEventListener("click", async () => {
-    const messageId = localStorage.getItem("messageId");
-    const chatID = localStorage.getItem("chatID");
-    if (!messageId) return;
-    const response = await fetch("api/del-message", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({messageId: messageId, chatID: chatID})
-    });
+        const result = await response.json();
 
-    const result = await response.json();
-
-    if (response.ok) {
-        if (result.success) {
-            // document.querySelector(messageId).remove();
-            console.log(messageId, result)
-            localStorage.removeItem("messageId");
+        if (response.ok) {
+            if (result.success) {
+                // document.querySelector(messageId).remove();
+                console.log(messageId, result)
+                localStorage.removeItem("messageId");
+            }
         }
-    }
 
-});
+    })
+}
 
 
 
@@ -143,6 +149,16 @@ function selectChat(chatContainer) {
             // В локальном хранилище находим id чата 
         }
     });
+}
+
+
+
+function deleteChat(chatContainer) {
+    chatContainer.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        delChatDiv.classList.remove("hidden");
+        console.log("1")
+    })
 }
 
 
@@ -350,52 +366,7 @@ socket.on("chat-created", (data) => {
 });
 
 
-// if (searchRecipient) {
-//     searchRecipient.addEventListener("keydown", async (event) => {
-//         if (event.key === "Enter") {
-//             const inputValue  = searchRecipient.value;
-//             const response = await fetch("/api/find-recipient", {
-//                 method: "POST",
-//                 headers: {"Content-Type": "application/json"},
-//                 body: JSON.stringify({inputValue: inputValue})
-//             });
-//             const result = await response.json();
-//             if (result.success === true) {
-//                 if (result.recpUsername) {
-//                     console.log(result)
-//                     const recipientUserName = result.recpUsername.username;
-//                     const recipientid = result.recpUsername.id;
-//                     findedUserInfo.textContent = `${recipientUserName}`;
-//                     findedUser.classList.remove("hidden");
-//                     console.log(recipientid);
-//                     buttonAdd.addEventListener("click", async () => {
-//                         buttonAdd.setAttribute("disabled", "true");
-//                         const response = await fetch("/api/add-recipient", {
-//                             method: "POST" ,
-//                             headers: {"Content-Type": "application/json"},
-//                             body: JSON.stringify({"recipientID": recipientid})
-//                         });
-//                         const result = await response.json();
-//                         if (response.ok) {
-//                             searchRecipient.value = "";
-//                             findedUser.classList.add("hidden");
-//                             console.log(result);
-//                         }
-//                         buttonAdd.removeAttribute("disabled");
-//                     });
-//                     buttonDel.addEventListener("click", async () => {
-                        
-//                     });
-//                 } else {
-//                     console.log("Вы не подходите по критериям, поэтому с вами никто общаться не будет...")
-//                 }
-//             } else {
-//                 console.log(result.message)
-//             }
 
-
-//     }});
-// }
 
 
 // ID текущего найденного пользователя
@@ -458,22 +429,30 @@ if (searchRecipient) {
             console.error("Ошибка при добавлении:", err);
         } finally {
             buttonAdd.removeAttribute("disabled");
+            findedUser.classList.add("hidden");
         }
     });
 
-    buttonDel.addEventListener("click", () => {
+    buttonDel.addEventListener("click", async () => {
+        
+        const response = await fetch("/api/del-recipient", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({  })
+        });
         searchRecipient.value = "";
         findedUser.classList.add("hidden");
         currentRecipientId = null;
     });
 }
 
-
-//Индикатор того, что пользователь печатает
-textInfo.addEventListener("input", () => { // Я печатаю
-    const chatID = localStorage.getItem("chatID");
-    socket.emit("typing", {userID, chatID});
-});
+if (textInfo) {
+    //Индикатор того, что пользователь печатает
+    textInfo.addEventListener("input", () => { // Я печатаю
+        const chatID = localStorage.getItem("chatID");
+        socket.emit("typing", {userID, chatID});
+    });
+}
 
 let typingTimer;
 
