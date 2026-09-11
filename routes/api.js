@@ -248,7 +248,6 @@ router.post("/add-recipient", async (req, res) => {
             LIMIT 1
         `, [user_ID, recpID]);
 
-        console.log(a);
         if (a !== undefined) {
             await db.exec('ROLLBACK');
             return res.json({ success: false, message: "Чат с таким пользователем уже есть"});

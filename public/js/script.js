@@ -28,7 +28,6 @@ const messageMenu = document.getElementById("message-menu");
 const btnDelete = document.getElementById("btn-delete");
 const delChatBtn = document.querySelector(".del-сhat-btn");
 const delChatDiv = document.querySelector(".del-chat-div");
-console.log(delChatBtn)
 
 if (eye) {
     eye.addEventListener("click", () => {
@@ -84,8 +83,6 @@ if (btnDelete) {
 
         if (response.ok) {
             if (result.success) {
-                // document.querySelector(messageId).remove();
-                console.log(messageId, result)
                 localStorage.removeItem("messageId");
             }
         }
@@ -101,7 +98,6 @@ socket.on("delete-message", (data) => {
     const chatID = +localStorage.getItem("chatID"); // id открытого на странице чата
     const lastMessageText = data.lastMessageText;
     const lastMessageTime = data.lastMessageTime;
-    console.log(lastMessageText, lastMessageTime)
     if (chat_ID == chatID) {
         // если сообщение нужно удалить из текущего чата
         messageContainer.querySelector(`#${messageId}`).remove();
@@ -142,8 +138,6 @@ function selectChat(chatContainer) {
         const result = await response.json();
         
         if (response.ok) {
-
-            console.log(result);
             messageContainer.innerHTML = "";
             result.messages.forEach(message => appendMessage(message));
             localStorage.setItem("chatID", chatContainer.id);
@@ -177,7 +171,6 @@ delChatBtn.addEventListener("click", async () => {
             
         const result = await response.json();
         if (response.ok) {
-            console.log(result);
             delChatDiv.classList.add("hidden");
         }
     }
@@ -229,7 +222,6 @@ if (publicUserInfo) {
             body: JSON.stringify({chatID: chatID})
         });
         const result = await response.json();
-        console.log(result);
         recipientInfo.innerHTML = `
         <span class="name">${result.data.name}</span>
         <span class="userName">${result.data.username}</span>
@@ -274,7 +266,6 @@ if (closeModalWindow) {
 if (closeMyModalWindow) {
     closeMyModalWindow.addEventListener("click",() => {
         myModalWindow.classList.add("hidden");
-        console.log("OK");
     });
 }
 
@@ -355,7 +346,6 @@ if (enterMessage) {
 socket.on("new-message", (message) => {
     // message - объект сообщения
     const chatID = +localStorage.getItem("chatID");
-    console.log(message, chatID);
     if (message["chat_id"] === chatID) {
         const chatContainer = document.getElementById(chatID);
         chatContainer.querySelector(".last-message-time").textContent = message["time"].slice(11, 16);
