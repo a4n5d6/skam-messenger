@@ -26,9 +26,9 @@ const eye = document.querySelector(".eye-button");
 const inpPas = document.querySelector(".password");
 const messageMenu = document.getElementById("message-menu");
 const btnDelete = document.getElementById("btn-delete");
-const delChatBtn = document.querySelector(".del-chat-btn");
-const delChatDiv = document.querySelector(".del-chat-div")
-
+const delChatBtn = document.querySelector(".del-сhat-btn");
+const delChatDiv = document.querySelector(".del-chat-div");
+console.log(delChatBtn)
 
 if (eye) {
     eye.addEventListener("click", () => {
@@ -43,6 +43,7 @@ if (eye) {
 if (messageMenu) {
     document.addEventListener("click", () => {
         messageMenu.classList.add('hidden');
+        delChatDiv.classList.add('hidden');
     });
 } 
 
@@ -154,12 +155,42 @@ function selectChat(chatContainer) {
 
 
 function deleteChat(chatContainer) {
-    chatContainer.addEventListener("contextmenu", (event) => {
+    chatContainer.addEventListener("contextmenu", async (event) => {
         event.preventDefault();
         delChatDiv.classList.remove("hidden");
-        console.log("1")
-    })
+        localStorage.setItem("chatID", chatContainer.id)
+    });
 }
+
+
+delChatBtn.addEventListener("click", async () => {
+    const chatID = localStorage.getItem("chatID");
+    if (chatID) {
+        const response = await fetch("api/del-chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({chatID: chatID})
+            // По клику на чат открываем сообщения чата
+        });
+            
+        const result = await response.json();
+        if (response.ok) {
+            console.log(result);
+            delChatDiv.classList.add("hidden");
+        }
+    }
+})
+
+
+socket.on("delete-chat", (data) => {
+    const chatID = data.chatID;
+    const chat = document.getElementById(chatID);
+    if (chat) {
+        chat.remove();
+    }
+});
 
 
 
@@ -250,6 +281,7 @@ if (closeMyModalWindow) {
 
 chatContainers.forEach(chatContainer => {
     selectChat(chatContainer);
+    deleteChat(chatContainer);
 });
 
 

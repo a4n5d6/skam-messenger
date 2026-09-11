@@ -310,9 +310,30 @@ router.post("/add-recipient", async (req, res) => {
 // });
 
 
-// router.post("/del-chat", (res, req) => {
-    
-// });
+router.post("/del-chat", async (req, res) => {
+    const chatID = req.body.chatID;
+    console.log(chatID);
+    const db = await getDatabase();
+    try {
+        await db.exec('BEGIN TRANSACTION');
+        const io = req.app.get('io');
+        const members = await db.all(
+            'SELECT user_id FROM chat_members WHERE chat_id = ?',
+            [+chatID]
+        );
+        db.run('DELETE FROM chats WHERE id = ?', [+chatID]);
+        members.forEach((member) => {
+            io.to(`user_${member['user_id']}`).emit('delete-chat', {
+                chatID: chatID
+            });
+        });
+        await db.exec('COMMIT');
+        return res.json({ success: true });
+    } catch (error) {
+        await db.exec('ROLLBACK');
+        return res.json({ success: false });
+    }
+});
 
 
 
