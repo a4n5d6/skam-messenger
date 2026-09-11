@@ -395,6 +395,7 @@ socket.on("chat-created", (data) => {
     `;
     userChats.prepend(chatDiv);
     selectChat(chatDiv);
+    deleteChat(chatDiv);
 });
 
 
