@@ -163,12 +163,31 @@ function deleteChat2(chatContainer) {
         const test = document.querySelector(".is-active");
         if (test) {
             test.classList.add("hidden");
-            test.classList.remove("is-active")
+            test.classList.remove("is-active");
         }
         const div = chatContainer.querySelector(".del-chat-div");
         div.classList.remove("hidden");
         div.classList.add("is-active");
-        localStorage.setItem("chatID", chatContainer.id)
+        localStorage.setItem("delChatID", chatContainer.id);
+
+        div.addEventListener("click", async () => {
+            const chatID = localStorage.getItem("delChatID");
+            if (chatID) {
+                const response = await fetch("api/del-chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({chatID: chatID})
+                    // По клику на чат открываем сообщения чата
+                });
+                    
+                const result = await response.json();
+                if (response.ok) {
+                    delChatDiv.classList.add("hidden");
+                }
+            }
+        });
     });
 }
 
@@ -194,10 +213,18 @@ delChatBtn.addEventListener("click", async () => {
 
 
 socket.on("delete-chat", (data) => {
-    const chatID = data.chatID;
-    const chat = document.getElementById(chatID);
-    if (chat) {
+    const delChatID = data.chatID;
+    const activeChatID = localStorage.getItem("chatID")
+    const chat = document.getElementById(delChatID);
+    console.log(typeof(delChatID));
+    console.log(typeof(activeChatID));
+    if (delChatID === activeChatID) {
         chat.remove();
+        messageContainer.innerHTML = "";
+        console.log(1)
+    } else {
+        chat.remove();
+        console.log(2)
     }
 });
 
