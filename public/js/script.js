@@ -157,6 +157,22 @@ function deleteChat(chatContainer) {
 }
 
 
+function deleteChat2(chatContainer) {
+    chatContainer.addEventListener("contextmenu", async (event) => {
+        event.preventDefault();
+        const test = document.querySelector(".is-active");
+        if (test) {
+            test.classList.add("hidden");
+            test.classList.remove("is-active")
+        }
+        const div = chatContainer.querySelector(".del-chat-div");
+        div.classList.remove("hidden");
+        div.classList.add("is-active");
+        localStorage.setItem("chatID", chatContainer.id)
+    });
+}
+
+
 delChatBtn.addEventListener("click", async () => {
     const chatID = localStorage.getItem("chatID");
     if (chatID) {
@@ -174,7 +190,7 @@ delChatBtn.addEventListener("click", async () => {
             delChatDiv.classList.add("hidden");
         }
     }
-})
+});
 
 
 socket.on("delete-chat", (data) => {
@@ -272,7 +288,7 @@ if (closeMyModalWindow) {
 
 chatContainers.forEach(chatContainer => {
     selectChat(chatContainer);
-    deleteChat(chatContainer);
+    deleteChat2(chatContainer);
 });
 
 
@@ -382,10 +398,13 @@ socket.on("chat-created", (data) => {
             </div>
             <div class="last-message-text"></div>
         </div>
+        <div class="del-chat-div hidden">
+            <button class="del-сhat-btn">Удалить чат</button>
+        </div>
     `;
     userChats.prepend(chatDiv);
     selectChat(chatDiv);
-    deleteChat(chatDiv);
+    deleteChat2(chatDiv);
 });
 
 

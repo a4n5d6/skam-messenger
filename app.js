@@ -27,6 +27,9 @@ const renderChatContainerHelper = function(userСhat) {  // внести изм�
         </div>
         <div class="last-message-text">${userСhat.text || ""}</div>
       </div>
+      <div class="del-chat-div hidden">
+        <button class="del-сhat-btn">Удалить чат</button>
+      </div>
     </div>
   `;
   return html;
