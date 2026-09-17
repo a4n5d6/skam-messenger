@@ -52,7 +52,6 @@ router.post('/send-message', async (req, res) => {
                 messageData
             );
         });
-        console.log('Сообщение отправлено', members);
         res.json({
             success: true,
             message: 'Сообщение отправлено',
@@ -178,7 +177,6 @@ router.post("/reg", async (req, res) => {
         const params = [username, name, email, password, "offline", mdt, mdt, mdt, color];
         const db = await getDatabase();
         const user = await db.run(sqlString, params);
-        console.log(user);
         res.redirect("/log");
     } catch (error) {
         console.log(error);
@@ -195,7 +193,6 @@ router.post("/log", async (req, res) => {
         const params = [email, password];
         const db = await getDatabase();
         const user = await db.get(sqlString, params);
-        console.log(user);
         if (user) {
             req.session.userID = user["id"];
             req.session.userName = user["name"];
@@ -233,6 +230,7 @@ router.post("/find-recipient", async (req, res) => {
 router.post("/add-recipient", async (req, res) => {
     const recpID = req.body.recipientID;
     const user_ID = req.session.userID;
+
     const db = await getDatabase();
 
     try {
@@ -246,7 +244,7 @@ router.post("/add-recipient", async (req, res) => {
             JOIN chats c ON cm1.chat_id = c.id
             WHERE cm1.user_id = ? AND cm2.user_id = ? AND c.type = "private"
             LIMIT 1
-        `, [user_ID, recpID]);
+        `, [+user_ID, +recpID]);
 
         if (a !== undefined) {
             await db.exec('ROLLBACK');
@@ -254,20 +252,20 @@ router.post("/add-recipient", async (req, res) => {
         }
         // Создание нового чата
         const result = await db.run(
-            'INSERT INTO chats ("type", "created_at", "last_message_id") VALUES ("private", ?, NULL)', 
+            "INSERT INTO chats (type, created_at, last_message_id) VALUES ('private', ?, NULL)",
             ["2026-06-19 18:40:00"]
         );
         const newID = result.lastID;
         
         // Привязка участников к созданному чату
         await Promise.all([
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, user_ID]),
-            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, recpID])
+            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, +user_ID]),
+            db.run('INSERT INTO chat_members ("chat_id", "user_id") VALUES (?, ?)', [newID, +recpID])
         ]);
 
         // Получение данных собеседника
         const recpData = await db.get('SELECT name, color FROM users WHERE id = ?', [recpID]);
-        
+
         await db.exec('COMMIT');
 
         // Подготовка данных для отправки через Socket.io
@@ -311,29 +309,32 @@ router.post("/add-recipient", async (req, res) => {
 
 router.post("/del-chat", async (req, res) => {
     const chatID = req.body.chatID;
-    console.log(chatID);
+
     const db = await getDatabase();
+
     try {
+        await db.run('PRAGMA foreign_keys = ON;');
         await db.exec('BEGIN TRANSACTION');
-        const io = req.app.get('io');
         const members = await db.all(
             'SELECT user_id FROM chat_members WHERE chat_id = ?',
             [+chatID]
         );
-        db.run('DELETE FROM chats WHERE id = ?', [+chatID]);
+        await db.run('DELETE FROM chats WHERE id = ?', [+chatID]);
+        await db.exec('COMMIT');
+
+        const io = req.app.get('io');
         members.forEach((member) => {
             io.to(`user_${member['user_id']}`).emit('delete-chat', {
                 chatID: chatID
             });
         });
-        await db.exec('COMMIT');
+
         return res.json({ success: true });
     } catch (error) {
         await db.exec('ROLLBACK');
         return res.json({ success: false });
     }
 });
-
 
 
 module.exports = router;

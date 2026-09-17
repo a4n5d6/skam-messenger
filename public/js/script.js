@@ -158,36 +158,34 @@ function deleteChat(chatContainer) {
 
 
 function deleteChat2(chatContainer) {
-    chatContainer.addEventListener("contextmenu", async (event) => {
+    // кнопка удаления чата
+    const div = chatContainer.querySelector(".del-chat-div");
+
+    // правый клик по чату
+    chatContainer.addEventListener("contextmenu", (event) => {
         event.preventDefault();
-        const test = document.querySelector(".is-active");
-        if (test) {
-            test.classList.add("hidden");
-            test.classList.remove("is-active");
+
+        const activeBtn = document.querySelector(".del-chat-div.is-active");
+        if (activeBtn) {
+            activeBtn.classList.add("hidden");
+            activeBtn.classList.remove("is-active");
         }
-        const div = chatContainer.querySelector(".del-chat-div");
+
         div.classList.remove("hidden");
         div.classList.add("is-active");
-        localStorage.setItem("delChatID", chatContainer.id);
+    });
 
-        div.addEventListener("click", async () => {
-            const chatID = localStorage.getItem("delChatID");
-            if (chatID) {
-                const response = await fetch("api/del-chat", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({chatID: chatID})
-                    // По клику на чат открываем сообщения чата
-                });
-                    
-                const result = await response.json();
-                if (response.ok) {
-                    delChatDiv.classList.add("hidden");
-                }
-            }
+    // клик по кнопке удаления чата
+    div.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const chatID = chatContainer.id
+        const response = await fetch("api/del-chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({chatID: chatID})
         });
+        const result = await response.json();
+        if (response.ok) { }
     });
 }
 
@@ -214,18 +212,19 @@ delChatBtn.addEventListener("click", async () => {
 
 socket.on("delete-chat", (data) => {
     const delChatID = data.chatID;
-    const activeChatID = localStorage.getItem("chatID")
     const chat = document.getElementById(delChatID);
-    console.log(typeof(delChatID));
-    console.log(typeof(activeChatID));
-    if (delChatID === activeChatID) {
-        chat.remove();
+
+    const activeChatID = localStorage.getItem("chatID")
+    console.log(delChatID, activeChatID);
+    console.log(typeof(delChatID), typeof(activeChatID));
+    console.log(chat);
+    if (+delChatID === +activeChatID) {
+        localStorage.removeItem("chatID");
+        const messageContainer = document.querySelector(".messages");
         messageContainer.innerHTML = "";
-        console.log(1)
-    } else {
-        chat.remove();
-        console.log(2)
     }
+
+    chat.remove();
 });
 
 
