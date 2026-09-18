@@ -218,10 +218,12 @@ socket.on("delete-chat", (data) => {
     console.log(delChatID, activeChatID);
     console.log(typeof(delChatID), typeof(activeChatID));
     console.log(chat);
-    if (+delChatID === +activeChatID) {
+    if (delChatID === activeChatID) { //Условие, которое проверяет удаление открытого чата
         localStorage.removeItem("chatID");
         const messageContainer = document.querySelector(".messages");
         messageContainer.innerHTML = "";
+        publicUserInfo.classList.add("hidden");
+        messageTextContainer.classList.add("hidden");
     }
 
     chat.remove();
