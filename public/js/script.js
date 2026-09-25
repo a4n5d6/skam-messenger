@@ -28,6 +28,9 @@ const messageMenu = document.getElementById("message-menu");
 const btnDelete = document.getElementById("btn-delete");
 const delChatBtn = document.querySelector(".del-сhat-btn");
 const delChatDiv = document.querySelector(".del-chat-div");
+const openSettigBtn = document.querySelector(".openSettingBtn");
+const closeSettingBtn = document.querySelector(".closeSettingBtn");
+const settings = document.querySelector(".settings");
 
 if (eye) {
     eye.addEventListener("click", () => {
@@ -532,6 +535,11 @@ socket.on("user_typing", (data) => {
     typingTimer = setTimeout(() => {
         typingSpan.classList.add("hidden");
     }, 1200);
+});
+
+
+openSettigBtn.addEventListener("click", () => { // Вот здесь начинается раздел настроек
+    settings.classList.remove("hidden");
 });
 
 
