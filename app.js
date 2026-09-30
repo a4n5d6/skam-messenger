@@ -70,7 +70,9 @@ app.use(sessionMiddleware);
 
 app.use('/', require('./routes/index'));
 app.use('/api', require('./routes/api'));
-
+// папка uploads станет публичной по адресу /public-uploads
+// img.src = `/public-uploads/аватарка.png`;
+app.use('/public-uploads', express.static('uploads'));
 
 app.use((req, res) => {
   res.status(404).render('404');

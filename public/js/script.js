@@ -556,7 +556,7 @@ addAvatar.addEventListener("click", () => {
 });
 
 
-// Загрузка аватарки
+// ЗАГРУЗКА АВАТАРКИ
 const uploadAvatarForm = document.getElementById("upload-avatar");
 const avatarInput = uploadAvatarForm.querySelector("#avatar");
 uploadAvatarForm.addEventListener("submit", async (event) => {

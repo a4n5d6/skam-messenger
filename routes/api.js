@@ -1,4 +1,5 @@
 const express = require('express');
+const multer  = require('multer');
 const router = express.Router();
 const { getDatabase } = require('../db/db.js');
 
@@ -209,7 +210,6 @@ router.post("/log", async (req, res) => {
 });
 
 
-
 router.post("/find-recipient", async (req, res) => {
     const recipientUsername = req.body.inputValue; 
     const username = req.session.userName;
@@ -299,9 +299,6 @@ router.post("/add-recipient", async (req, res) => {
 });
 
 
-
-
-
 // router.post("/del-recipient", (res, req) => {
     
 // });
@@ -336,10 +333,17 @@ router.post("/del-chat", async (req, res) => {
     }
 });
 
-// Загрузка аватарки
-router.post("/upload-avatar", async (req, res) => {
-    const file = req;
+
+// ЗАГРУЗКА АВАТАРКИ
+// инициализация multer
+// { dest: 'uploads/' } - указываем папку, куда сохранять аватарки
+const upload = multer({ dest: 'uploads/' });
+
+router.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
+    // upload.single("avatar") - "avatar" - это ключ объекта formData (script.js строка 565)
+    const file = req.file;
     console.log(file);
+    if (!file) return res.json({ success: false });
     return res.json({ success: true });
 });
 
