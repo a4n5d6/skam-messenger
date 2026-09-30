@@ -60,3 +60,160 @@ SELECT
       DELETE FROM messages WHERE sender_id = 4;
       DELETE FROM chat_members WHERE user_id = 4;
       DELETE FROM users WHERE id = 4; // Таким образом происходит удаление пользователя
+
+
+
+
+
+
+
+      // Код для шифрования
+      
+      const crypto = require('crypto');
+
+// 1. Секретный ключ (должен быть строго 32 символа!). 
+// В реальном проекте он берется из .env файла и никому не показывается!
+const SECRET_KEY = 'my-super-secret-key-32-chars!!'; 
+const ALGORITHM = 'aes-256-cbc';
+
+// ФУНКЦИЯ ШИФРОВАНИЯ (для сохранения в базу)
+function encrypt(text) {
+    // Генерируем случайный вектор инициализации (IV) для уникальности каждого шифра
+    const iv = crypto.randomBytes(16); 
+    
+    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    // Возвращаем IV и зашифрованный текст вместе (через двоеточие), чтобы потом расшифровать
+    return iv.toString('hex') + ':' + encrypted;
+}
+
+// ФУНКЦИЯ РАСШИФРОВКИ (для выгрузки в Excel менеджеру)
+function decrypt(text) {
+    const textParts = text.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+}
+
+// === ПРОВЕРКА РАБОТЫ ===
+const phone = "+79991234567";
+
+const encryptedPhone = encrypt(phone);
+console.log("В базу запишем это:", encryptedPhone); 
+// Выведет что-то вроде: 4a2b8e...:7f3c91... (каша из букв и цифр)
+
+const decryptedPhone = decrypt(encryptedPhone);
+console.log("Менеджеру покажем это:", decryptedPhone); 
+// Выведет обратно: +79991234567
+
+
+
+
+
+// В-2
+const Database = require('better-sqlite3');
+const crypto = require('crypto');
+
+// Подключаем базу данных (файл database.db создастся сам в папке проекта)
+const db = new Database('database.db');
+
+// Конфиг шифрования (Ключ должен быть ровно 32 символа!)
+const SECRET_KEY = 'my-super-secret-key-32-chars!!'; 
+const ALGORITHM = 'aes-256-cbc';
+
+// --- НАСТРОЙКА ТАБЛИЦЫ ---
+// Создаем таблицу для заказов мерча, если её ещё нет
+db.exec(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    phone_encrypted TEXT NOT NULL,
+    phone_hash TEXT NOT NULL, -- Хэш для проверки на дубликаты
+    size TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+// --- ФУНКЦИИ ШИФРОВАНИЯ ---
+function encrypt(text) {
+    const iv = crypto.randomBytes(16); 
+    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
+}
+
+function decrypt(text) {
+    const textParts = text.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(SECRET_KEY), iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+// Создаем хэш (SHA-256) от телефона, чтобы быстро проверять дубликаты в базе
+function makeHash(text) {
+    return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+// --- СЕРВЕРНАЯ ЛОГИКА (API функции) ---
+
+// 1. Функция создания нового заказа
+function createOrder(username, rawPhone, size) {
+    const phoneHash = makeHash(rawPhone);
+    
+    // Проверяем, не заказывал ли уже человек с таким номером (защита от спама)
+    const checkDuplicate = db.prepare('SELECT id FROM orders WHERE phone_hash = ?').get(phoneHash);
+    if (checkDuplicate) {
+        return { success: false, message: 'Этот номер телефона уже участвует в предзаказе!' };
+    }
+    
+    // Шифруем телефон для безопасного хранения
+    const phoneEncrypted = encrypt(rawPhone);
+    
+    // Вставляем данные в SQLite
+    const insert = db.prepare('INSERT INTO orders (username, phone_encrypted, phone_hash, size) VALUES (?, ?, ?, ?)');
+    insert.run(username, phoneEncrypted, phoneHash, size);
+    
+    return { success: true, message: 'Заказ успешно принят!' };
+}
+
+// 2. Функция для админки (выгрузка для менеджера рэпера)
+function getOrdersForManager() {
+    const rows = db.prepare('SELECT id, username, phone_encrypted, size, created_at FROM orders').all();
+    
+    // Расшифровываем телефоны обратно перед отправкой
+    return rows.map(row => ({
+        id: row.id,
+        username: row.username,
+        phone: decrypt(row.phone_encrypted), // Превращаем кашу обратно в номер
+        size: row.size,
+        date: row.created_at
+    }));
+}
+
+// === ТЕСТИРУЕМ РАБОТУ ===
+
+// Симулируем два заказа с сайта
+console.log(createOrder('Иван Иванов', '+79991112233', 'XL')); // Успешно
+console.log(createOrder('Петр Петров', '+79995556677', 'M'));  // Успешно
+console.log(createOrder('Хакер', '+79991112233', 'L'));        // Ошибка (дубликат по хэшу)
+
+// Смотрим, как это выглядит в базе данных физически (если открыть файл базы)
+const rawDataInDb = db.prepare('SELECT id, phone_encrypted, phone_hash FROM orders').all();
+console.log('\n--- ТАК ЭТО ХРАНИТСЯ В SQLITE (БЕЗОПАСНО) ---');
+console.log(rawDataInDb);
+
+// Симулируем выгрузку данных для менеджера Тейпа
+const managerReport = getOrdersForManager();
+console.log('\n--- А ТАК ЭТО ВИДИТ МЕНЕДЖЕР В СВОЕЙ АДМИНКЕ ---');
+console.log(managerReport);

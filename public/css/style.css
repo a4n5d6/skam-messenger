@@ -571,11 +571,11 @@ body {
 .my-info {
     display: flex;
     position: absolute;
-    top: 40%;
-    left: 40%;
+    left: 50%;
     flex-direction: column;
     gap: 20px;
     top: 0;
+    transform: translateX(-50%) translateY(50%);
 }
 
 .recipient-info {
@@ -588,8 +588,6 @@ body {
 }
 
 .name {
-    position: absolute;
-    bottom: 200%;
     font-size: 30px;
 }
 
@@ -823,3 +821,108 @@ form {
     
 }
 
+
+/* --- ПЕРВОЕ МОДАЛЬНОЕ ОКНО (Настройки) --- */
+.settings {
+    /* Центрируем черное окошко ровно посередине экрана */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    
+    /* Оформление темной карточки */
+    background-color: #222222; 
+    color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333333;
+    
+    /* Выстраиваем кнопки внутри вертикально */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 280px;
+    font-family: sans-serif;
+}
+
+/* Маленькая красная кнопка закрытия в углу карточки настроек */
+.closeSettingBtn {
+    position: absolute;
+    top: 8px;      /* Близко к верхнему краю */
+    right: 12px;    /* Близко к правому краю */
+    background: none;
+    border: none;
+    
+    color: #ff5c5c; 
+    font-size: 14px; 
+    font-weight: bold;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.closeSettingBtn:hover {
+    color: #ff3333;
+    transform: scale(1.1);
+}
+
+
+/* --- ВТОРОЕ МОДАЛЬНОЕ ОКНО (Смена аватарки) --- */
+/* Оно открывается на весь экран поверх первого окна */
+.change-avatar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px); 
+    z-index: 200; /* Индекс выше, чтобы быть поверх настроек */
+}
+
+/* Черная карточка внутри второго окна */
+#upload-avatar {
+    background-color: #222222; 
+    color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333333;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 280px;
+    font-family: sans-serif;
+}
+
+
+/* --- ОБЩИЕ СТИЛИ ДЛЯ КНОПОК И СКРЫТИЯ --- */
+/* Скрытие окон, когда добавлен класс hidden */
+.settings.hidden,
+.change-avatar.hidden {
+    display: none !important;
+}
+
+/* Красивый стиль для всех обычных кнопок действий */
+.settings button:not(.closeSettingBtn),
+#upload-avatar button {
+    background-color: #333333;
+    color: #ffffff;
+    border: 1px solid #444444;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.settings button:not(.closeSettingBtn):hover,
+#upload-avatar button:hover {
+    background-color: #444444;
+}

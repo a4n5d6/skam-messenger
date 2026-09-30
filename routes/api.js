@@ -336,5 +336,12 @@ router.post("/del-chat", async (req, res) => {
     }
 });
 
+// Загрузка аватарки
+router.post("/upload-avatar", async (req, res) => {
+    const file = req;
+    console.log(file);
+    return res.json({ success: true });
+});
+
 
 module.exports = router;

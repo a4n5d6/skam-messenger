@@ -31,6 +31,9 @@ const delChatDiv = document.querySelector(".del-chat-div");
 const openSettigBtn = document.querySelector(".openSettingBtn");
 const closeSettingBtn = document.querySelector(".closeSettingBtn");
 const settings = document.querySelector(".settings");
+const addAvatar = document.querySelector(".addAvatar");
+const changeAvatar = document.querySelector(".change-avatar");
+const takePhoto = document.querySelector(".takePhoto");
 
 if (eye) {
     eye.addEventListener("click", () => {
@@ -540,6 +543,35 @@ socket.on("user_typing", (data) => {
 
 openSettigBtn.addEventListener("click", () => { // Вот здесь начинается раздел настроек
     settings.classList.remove("hidden");
+});
+
+
+closeSettingBtn.addEventListener("click", () => {
+    settings.classList.add("hidden");
+});
+
+
+addAvatar.addEventListener("click", () => {
+    changeAvatar.classList.remove("hidden");
+});
+
+
+// Загрузка аватарки
+const uploadAvatarForm = document.getElementById("upload-avatar");
+const avatarInput = uploadAvatarForm.querySelector("#avatar");
+uploadAvatarForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append("avatar", avatarInput.files[0]);
+    console.log(formData.get("avatar"))
+    const response = await fetch("/api/upload-avatar", {
+        method: "POST",
+        body: formData
+    });
+
+});
+takePhoto.addEventListener("click", () => {
+    changeAvatar.classList.add("hidden");
 });
 
 
