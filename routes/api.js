@@ -174,8 +174,8 @@ router.post("/reg", async (req, res) => {
 
     // регистрация
     try {
-        const sqlString = 'INSERT INTO users VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [username, name, email, password, "offline", mdt, mdt, mdt, color];
+        const sqlString = 'INSERT INTO users VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [username, name, email, password, "offline", mdt, mdt, mdt, color, "NULL"];
         const db = await getDatabase();
         const user = await db.run(sqlString, params);
         res.redirect("/log");
@@ -341,10 +341,19 @@ const upload = multer({ dest: 'uploads/' });
 
 router.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
     // upload.single("avatar") - "avatar" - это ключ объекта formData (script.js строка 565)
+    const user_ID = req.session.userID;
     const file = req.file;
-    console.log(file);
-    if (!file) return res.json({ success: false });
-    return res.json({ success: true });
+    const name = file.originalname;
+    const db = await getDatabase();
+    console.log(file, name);
+    try {
+        await db.run(`UPDATE users SET avatars = ? WHERE id = ?`, [name, user_ID]);
+        return res.json({ success: true, message: "Аватарка успешно поставлена" });
+    } catch {
+        // if (!file) return res.json({ success: false });
+        // return res.json({ success: true });
+        return res.json({ success: false });
+    }
 });
 
 
